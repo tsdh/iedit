@@ -30,7 +30,7 @@
 ;; This package provides a more intuitive way of replace-string operation:
 ;;
 ;; - Select the occurrence in the buffer
-;;   In Transient Mark mode, just mark a region, the content of the 
+;;   In Transient Mark mode, just mark a region, the content of the
 ;;   region will be used as the occurrence. (if Transient Mark mode is disabled,
 ;;   using C-u C-x C-x or C-SPC C-SPC to activate it just for this one time).
 ;;
@@ -86,6 +86,14 @@
   :type 'boolean
   :group 'iedit)
 
+(defcustom iedit-only-at-word-boundaries t
+  "If no-nil, matches have to start and end at work boundaries.
+  For example, when invoking iedit-mode on the \"in\" in the
+  sentence \"The king in the castle...\", the \"king\" is not
+  edited."
+  :type 'boolean
+  :group 'iedit)
+
 (defcustom iedit-unmatched-lines-invisible-default nil
   "If no-nil, hide lines that do not cover any occurrences by
 default."
@@ -104,7 +112,7 @@ default."
 
 (or (assq 'iedit-mode minor-mode-alist)
     (nconc minor-mode-alist
-           (list '(iedit-mode iedit-mode))))
+	   (list '(iedit-mode iedit-mode))))
 
 (defvar iedit-occurrences-overlays nil
   "The occurrences slot contains a list of overlays used to
@@ -258,8 +266,8 @@ Commands:
       (deactivate-mark)
       (iedit-start occurrence))))
 
-(defun iedit-start (occurrence-exp)
-  "Start an iedit for the occurrence-exp in the current buffer."
+(defun iedit-start (occurrence)
+  "Start an iedit for the occurrence in the current buffer."
   (setq	iedit-mode " Iedit")
   (setq iedit-occurrences-overlays nil)
   (setq iedit-unmatched-lines-invisible iedit-unmatched-lines-invisible-default)
@@ -270,18 +278,21 @@ Commands:
   (add-hook 'kbd-macro-termination-hook 'iedit-done)
   ;; Find and record each occurrence's markers and add the overlay to the occurrences
   (let ((counter 0)
-        (case-fold-search (not iedit-case-sensitive)))
+        (case-fold-search (not iedit-case-sensitive))
+	(occurrence-exp (regexp-quote occurrence)))
   (save-excursion
+    (when iedit-only-at-word-boundaries
+      (setq occurrence-exp (concat "\\<" occurrence-exp "\\>")))
     (goto-char (point-min))
-    (while (search-forward occurrence-exp nil t)
+    (while (re-search-forward occurrence-exp nil t)
       (push (iedit-make-occurrence-overlay (match-beginning 0) (match-end 0))
             iedit-occurrences-overlays)
       (setq counter (1+ counter)))      ; at less 1
       (setq iedit-occurrences-overlays (nreverse iedit-occurrences-overlays))
       (if iedit-unmatched-lines-invisible
           (iedit-hide-unmatched-lines))
-      (message "%d matches for \"%s\"" 
-               counter 
+      (message "%d matches for \"%s\""
+               counter
                (if (> (length occurrence-exp) 50)
                    (concat (substring occurrence-exp 0 50) "...")
                  occurrence-exp)))))
@@ -310,8 +321,8 @@ Commands:
 (defun iedit-done ()
   "Exit iedit mode."
   (let ((ov (car iedit-occurrences-overlays)))
-    (if ov 
-        (setq iedit-last-occurrence-in-history 
+    (if ov
+        (setq iedit-last-occurrence-in-history
               (buffer-substring (overlay-start ov) (overlay-end ov)))))
   (remove-overlays (point-min) (point-max) iedit-occurrence-overlay-name t)
   (remove-overlays (point-min) (point-max) iedit-invisible-overlay-name t)
@@ -371,13 +382,13 @@ beginning of the buffer."
     (when in-occurrence
       (setq pos  (next-single-char-property-change pos 'iedit-occurrence-overlay-name)))
     (setq pos (next-single-char-property-change pos 'iedit-occurrence-overlay-name))
-    
+
     (if (/= pos (point-max))
         (setq iedit-forward-success t)
       (if (and iedit-forward-success in-occurrence)
           (progn (message "This is the last occurrence.")
                  (setq iedit-forward-success nil))
-        (progn 
+        (progn
           (if (get-char-property (point-min) 'iedit-occurrence-overlay-name)
               (setq pos (point-min))
             (setq pos (next-single-char-property-change (point-min) 'iedit-occurrence-overlay-name)))
@@ -400,12 +411,12 @@ the buffer."
     ;; At the start of the first occurrence
     (if (or (and (eq pos (point-min))
                  (not (get-char-property (point-min) 'iedit-occurrence-overlay-name)))
-            (and (eq (point) (point-min)) 
+            (and (eq (point) (point-min))
                  in-occurrence))
         (if (and iedit-forward-success in-occurrence)
             (progn (message "This is the first occurrence.")
                    (setq iedit-forward-success nil))
-          (progn 
+          (progn
             (setq pos (previous-single-char-property-change (point-max) 'iedit-occurrence-overlay-name))
             (if (not (get-char-property (- (point-max) 1) 'iedit-occurrence-overlay-name))
                 (setq pos (previous-single-char-property-change pos 'iedit-occurrence-overlay-name)))
