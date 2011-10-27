@@ -4,6 +4,7 @@
 
 ;; Time-stamp: <2011-10-02 00:04:12 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
+;; Contributors: Tassilo Horn <tassilo@member.fsf.org>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.90
 ;; X-URL: http://www.emacswiki.org/emacs/iedit.el
