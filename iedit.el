@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011 Victor Ren
 
-;; Time-stamp: <2011-10-02 00:04:12 Victor Ren>
+;; Time-stamp: <2012-01-14 23:12:48 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.90
@@ -56,10 +56,14 @@
 ;; (define-key isearch-mode-map (kbd "C-;") 'iedit-mode)
 
 ;;; todo:
+;; - C-n,C-p is slow when unmachted lines are hided.
 ;; - Lazy highlight feature (from isearch)?
 ;; - toggle blank line between matched lines?
-;; - unit test
+;; - ert unit test
 ;; - profile to find bottleneck for huge file
+
+;;; Contributors
+;; Adam Lindberg <eproxus@gmail.com> added a case sensitivity option that can be toggled.
 
 ;;; Code:
 
@@ -362,7 +366,7 @@ occurrences."
 
 (defun iedit-next-occurrence ()
   "Move forward to the next occurrence in the `iedit'.
-If the point is already in the last occurrences, you ask to type
+If the point is already in the last occurrences, you are asked to type
 another `iedit-next-occurrence', it starts again from the
 beginning of the buffer."
   (interactive)
@@ -388,7 +392,7 @@ beginning of the buffer."
 
 (defun iedit-prev-occurrence ()
   "Move backward to the previous occurrence in the `iedit'.
-If the point is already in the first occurrences, you ask to type
+If the point is already in the first occurrences, you are asked to type
 another `iedit-prev-occurrence', it starts again from the end of
 the buffer."
   (interactive)
