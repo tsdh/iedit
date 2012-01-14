@@ -1,0 +1,5 @@
+iedit - a better alternative of replace-string
+
+It is an Emacs minor mode and allow you edit one occurrence of some text in a
+buffer (possibly narrowed), and simultaneously have all other occurrences edited
+the same way.
