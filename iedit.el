@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-01-17 02:16:07 Victor Ren>
+;; Time-stamp: <2012-01-17 02:21:43 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.91
@@ -88,12 +88,12 @@
   :type 'face
   :group 'iedit)
 
-(defcustom iedit-current-symbol-default 't
+(defcustom iedit-current-symbol-default t
   "If no-nil, use current symbol by default for the occurrence."
   :type 'boolean
   :group 'iedit)
 
-(defcustom iedit-case-sensitive-default 't
+(defcustom iedit-case-sensitive-default t
   "If no-nil, matching is case sensitive"
   :type 'boolean
   :group 'iedit)
