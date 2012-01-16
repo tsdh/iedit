@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011 Victor Ren
 
-;; Time-stamp: <2012-01-17 01:14:42 Victor Ren>
+;; Time-stamp: <2012-01-17 01:57:19 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.90
@@ -42,8 +42,11 @@
 ;;
 ;; - Finish - by pressing C-; again
 
-;; If Transient Mark mode is disabled or the region is not active,
-;; the `current-word' is used as the occurrence by default.
+;; If Transient Mark mode is disabled or the region is not active, the current
+;; symbol(return from `current-word') is used as the occurrence by default and
+;; only the same symbol are matched.  This is good for renaming refactoring
+;; during programming.  If you still want to match all the occurrences, even it
+;; is part of another symbol, you may have to select the symbol first.
 
 ;; You can also switch to iedit mode from isearch mode directly. The current
 ;; search string is used as the occurrence.
@@ -81,8 +84,8 @@
   :type 'face
   :group 'iedit)
 
-(defcustom iedit-current-word-default 't
-  "If no-nil, use current word by default for the occurrence."
+(defcustom iedit-current-symbol-default 't
+  "If no-nil, use current symbol by default for the occurrence."
   :type 'boolean
   :group 'iedit)
 
@@ -91,8 +94,8 @@
   :type 'boolean
   :group 'iedit)
 
-(defcustom iedit-only-at-word-boundaries t
-  "If no-nil, matches have to start and end at work boundaries.
+(defcustom iedit-only-at-symbol-boundaries t
+  "If no-nil, matches have to start and end at symbol boundaries.
   For example, when invoking iedit-mode on the \"in\" in the
   sentence \"The king in the castle...\", the \"king\" is not
   edited."
@@ -236,13 +239,20 @@ This is like `describe-bindings', but displays only Iedit keys."
 If iedit mode is off, turn iedit mode on, off otherwise.
 
 In Transient Mark mode, when iedit mode is turned on, all the
-occurrences of the current region are highlighted. If one
+occurrences of the current region are highlighted.  If one
 occurrence is modified, the change are propagated to all other
 occurrences simultaneously.
 
 If Transient Mark mode is disabled or the region is not active,
-the `current-word' is used as occurrence. All the occurrences of
-the `current-word' are highlighted.
+the current symbol is used as occurrence.  If Transient Mark mode
+is disabled or the region is not active, the current
+symbol(return from `current-word') is used as the occurrence by
+default.  All and only all the occurrences of the current symbol
+are highlighted, not include occurences that are part of another
+symbol.  This is good for renaming refactoring during
+programming.  If you still want to match all the occurrences,
+even they are in another symbol, you may have to select the
+symbol first.
 
 You can also switch to iedit mode from isearch mode directly. The
 current search string is used as occurrence.  All occurrences of
@@ -265,14 +275,16 @@ Commands:
             ((and isearch-mode (not (string= isearch-string "")))
              (setq occurrence (buffer-substring-no-properties (point) isearch-other-end))
              (isearch-exit))
-            ((and iedit-current-word-default (current-word t))
-             (setq occurrence (current-word)))
+            ((and iedit-current-symbol-default (current-word t))
+             (setq occurrence (current-word))
+             (when iedit-only-at-symbol-boundaries
+               (setq occurrence (concat "\\_<" (regexp-quote occurrence) "\\_>"))))
             (t (error "No candidate of the occurrence, cannot enable iedit mode.")))
       (deactivate-mark)
       (iedit-start occurrence))))
 
-(defun iedit-start (occurrence)
-  "Start an iedit for the occurrence in the current buffer."
+(defun iedit-start (occurrence-exp)
+  "Start an iedit for the occurrence-exp in the current buffer."
   (setq	iedit-mode " Iedit")
   (setq iedit-occurrences-overlays nil)
   (setq iedit-unmatched-lines-invisible iedit-unmatched-lines-invisible-default)
@@ -283,16 +295,13 @@ Commands:
   (add-hook 'kbd-macro-termination-hook 'iedit-done)
   ;; Find and record each occurrence's markers and add the overlay to the occurrences
   (let ((counter 0)
-        (case-fold-search (not iedit-case-sensitive))
-	(occurrence-exp (regexp-quote occurrence)))
-  (save-excursion
-    (when iedit-only-at-word-boundaries
-      (setq occurrence-exp (concat "\\<" occurrence-exp "\\>")))
-    (goto-char (point-min))
-    (while (re-search-forward occurrence-exp nil t)
-      (push (iedit-make-occurrence-overlay (match-beginning 0) (match-end 0))
-            iedit-occurrences-overlays)
-      (setq counter (1+ counter)))      ; at less 1
+        (case-fold-search (not iedit-case-sensitive)))
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward occurrence-exp nil t)
+        (push (iedit-make-occurrence-overlay (match-beginning 0) (match-end 0))
+              iedit-occurrences-overlays)
+        (setq counter (1+ counter)))      ; at less 1
       (setq iedit-occurrences-overlays (nreverse iedit-occurrences-overlays))
       (if iedit-unmatched-lines-invisible
           (iedit-hide-unmatched-lines))
