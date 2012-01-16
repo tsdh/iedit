@@ -1,11 +1,11 @@
 ;;; iedit.el --- Edit multiple regions with the same content simultaneously.
 
-;; Copyright (C) 2010, 2011 Victor Ren
+;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-01-17 01:57:19 Victor Ren>
+;; Time-stamp: <2012-01-17 02:16:07 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
-;; Version: 0.90
+;; Version: 0.91
 ;; X-URL: http://www.emacswiki.org/emacs/iedit.el
 ;; Compatibility: GNU Emacs: 22.x, 23.x, 24.x
 
@@ -59,7 +59,7 @@
 ;; (define-key isearch-mode-map (kbd "C-;") 'iedit-mode)
 
 ;;; todo:
-;; - C-n,C-p is slow when unmachted lines are hided.
+;; - C-n,C-p is slow when unmatched lines are hided.
 ;; - Lazy highlight feature (from isearch)?
 ;; - toggle blank line between matched lines?
 ;; - ert unit test
@@ -67,7 +67,11 @@
 
 ;;; Contributors
 ;; Adam Lindberg <eproxus@gmail.com> added a case sensitivity option that can be toggled.
-;; Tassilo Horn <tassilo@member.fsf.org> added an option to match only complete words, not inside words
+
+;; Tassilo Horn <tassilo@member.fsf.org> added an option to match only complete
+;; words, not inside words
+
+;; Le Wang <l26wang@gmail.com> proposed to match only complete symbols, not inside symbols.
 
 ;;; Code:
 
@@ -248,7 +252,7 @@ the current symbol is used as occurrence.  If Transient Mark mode
 is disabled or the region is not active, the current
 symbol(return from `current-word') is used as the occurrence by
 default.  All and only all the occurrences of the current symbol
-are highlighted, not include occurences that are part of another
+are highlighted, not include occurrences that are part of another
 symbol.  This is good for renaming refactoring during
 programming.  If you still want to match all the occurrences,
 even they are in another symbol, you may have to select the
