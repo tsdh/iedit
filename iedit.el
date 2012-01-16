@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-01-17 02:21:43 Victor Ren>
+;; Time-stamp: <2012-01-17 02:58:46 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.91
@@ -43,10 +43,7 @@
 ;; - Finish - by pressing C-; again
 
 ;; If Transient Mark mode is disabled or the region is not active, the current
-;; symbol(return from `current-word') is used as the occurrence by default and
-;; only the same symbol are matched.  This is good for renaming refactoring
-;; during programming.  If you still want to match all the occurrences, even it
-;; is part of another symbol, you may have to select the symbol first.
+;; symbol (returns from `current-word') is used as the occurrence by default.
 
 ;; You can also switch to iedit mode from isearch mode directly. The current
 ;; search string is used as the occurrence.
@@ -248,15 +245,13 @@ occurrence is modified, the change are propagated to all other
 occurrences simultaneously.
 
 If Transient Mark mode is disabled or the region is not active,
-the current symbol is used as occurrence.  If Transient Mark mode
-is disabled or the region is not active, the current
-symbol(return from `current-word') is used as the occurrence by
-default.  All and only all the occurrences of the current symbol
-are highlighted, not include occurrences that are part of another
-symbol.  This is good for renaming refactoring during
-programming.  If you still want to match all the occurrences,
-even they are in another symbol, you may have to select the
-symbol first.
+the current symbol (returns from `current-word') is used as the
+occurrence by default.  The occurrences of the current
+symbol, but not include occurrences that are part of other
+symbols, are highlighted.  This is good for renaming refactoring
+during programming.  If you still want to match all the
+occurrences, even though they are parts of other symbols, you may
+have to select the symbol first.
 
 You can also switch to iedit mode from isearch mode directly. The
 current search string is used as occurrence.  All occurrences of
