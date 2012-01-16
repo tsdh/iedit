@@ -2,9 +2,8 @@
 
 ;; Copyright (C) 2010, 2011 Victor Ren
 
-;; Time-stamp: <2012-01-14 23:12:48 Victor Ren>
+;; Time-stamp: <2012-01-17 01:14:42 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
-;; Contributors: Tassilo Horn <tassilo@member.fsf.org>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.90
 ;; X-URL: http://www.emacswiki.org/emacs/iedit.el
@@ -65,6 +64,7 @@
 
 ;;; Contributors
 ;; Adam Lindberg <eproxus@gmail.com> added a case sensitivity option that can be toggled.
+;; Tassilo Horn <tassilo@member.fsf.org> added an option to match only complete words, not inside words
 
 ;;; Code:
 
