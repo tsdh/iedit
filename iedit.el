@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-01-17 02:58:46 Victor Ren>
+;; Time-stamp: <2012-01-19 16:21:18 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.91
@@ -373,16 +373,19 @@ This modification hook is triggered when a user edits any
 occurrence and is responsible for updating all other
 occurrences."
   (when (and after (not undo-in-progress)) ; undo will do all the work
-    (let ((value (buffer-substring (overlay-start occurrence) (overlay-end occurrence)))
-          (inhibit-modification-hooks t))
+    (let ((inhibit-modification-hooks t)
+          (offset (- beg (overlay-start occurrence))))
       (save-excursion
-        (dolist (like-occurrence iedit-occurrences-overlays)
-          (if (not (eq like-occurrence occurrence))
-              (progn
-                (goto-char (overlay-start like-occurrence))
-                (delete-region (overlay-start like-occurrence)
-                               (overlay-end like-occurrence))
-                (insert value))))))))
+        (if (eq 0 change) ; insertion
+            (let ((value (buffer-substring beg end)))
+              (dolist (like-occurrence (remove occurrence iedit-occurrences-overlays))
+                (progn
+                  (goto-char (+ (overlay-start like-occurrence) offset))
+                  (insert value))))
+          (dolist (like-occurrence (remove occurrence iedit-occurrences-overlays))
+            (let* ((beginning (+ (overlay-start like-occurrence) offset))
+                   (ending (+ beginning change)))
+              (delete-region beginning ending))))))))
 
 (defun iedit-next-occurrence ()
   "Move forward to the next occurrence in the `iedit'.
