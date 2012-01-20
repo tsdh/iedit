@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-01-19 16:21:18 Victor Ren>
+;; Time-stamp: <2012-01-20 11:33:43 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.91
@@ -145,11 +145,16 @@ iedit mode is turned off last time.")
   "This is buffer local variable which indicate the moving
 forward or backward successful")
 
+(defvar iedit-before-modification-end 0
+  "This is buffer local variable which is the argment `end' of hook function
+before a change is made.")
+
 (make-variable-buffer-local 'iedit-occurrences-overlays)
 (make-variable-buffer-local 'iedit-unmatched-lines-invisible)
 (make-variable-buffer-local 'iedit-case-sensitive)
 (make-variable-buffer-local 'iedit-last-occurrence-in-history)
 (make-variable-buffer-local 'iedit-forward-success)
+(make-variable-buffer-local 'iedit-before-modification-end)
 
 (defconst iedit-occurrence-overlay-name 'iedit-occurrence-overlay-name)
 (defconst iedit-invisible-overlay-name 'iedit-invisible-overlay-name)
@@ -372,20 +377,26 @@ occurrences if the user starts typing."
 This modification hook is triggered when a user edits any
 occurrence and is responsible for updating all other
 occurrences."
-  (when (and after (not undo-in-progress)) ; undo will do all the work
-    (let ((inhibit-modification-hooks t)
-          (offset (- beg (overlay-start occurrence))))
-      (save-excursion
-        (if (eq 0 change) ; insertion
-            (let ((value (buffer-substring beg end)))
+  (when (not undo-in-progress) ; undo will do all the work
+    (if (null after) ; before modification
+        (setq iedit-before-modification-end end)
+      ;; exclude text properites change, only continue for insertion or deletion
+      (when (or (not (eq iedit-before-modification-end end))) 
+        (let ((inhibit-modification-hooks t)
+              (offset (- beg (overlay-start occurrence))))
+          (save-excursion
+            ;; insertion
+            (if (eq 0 change) 
+                (let ((value (buffer-substring beg end)))
+                  (dolist (like-occurrence (remove occurrence iedit-occurrences-overlays))
+                    (progn
+                      (goto-char (+ (overlay-start like-occurrence) offset))
+                      (insert value))))
+              ;; deletion
               (dolist (like-occurrence (remove occurrence iedit-occurrences-overlays))
-                (progn
-                  (goto-char (+ (overlay-start like-occurrence) offset))
-                  (insert value))))
-          (dolist (like-occurrence (remove occurrence iedit-occurrences-overlays))
-            (let* ((beginning (+ (overlay-start like-occurrence) offset))
-                   (ending (+ beginning change)))
-              (delete-region beginning ending))))))))
+                (let* ((beginning (+ (overlay-start like-occurrence) offset))
+                       (ending (+ beginning change)))
+                  (delete-region beginning ending))))))))))
 
 (defun iedit-next-occurrence ()
   "Move forward to the next occurrence in the `iedit'.
