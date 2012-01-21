@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-01-21 11:52:29 Victor Ren>
+;; Time-stamp: <2012-01-21 14:12:53 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.91
@@ -329,15 +329,12 @@ Commands:
         (unmatched-lines nil))
     (save-excursion
       (dolist (overlay iedit-occurrences-overlays)
-        (let ((match-start (overlay-start overlay))
-              (match-end (overlay-end overlay)))
-          (goto-char match-start)
-          (if (> (line-beginning-position) (1+ prev-occurrence-end))
-              (let ((unmatch-start (1+ prev-occurrence-end))
-                    (unmatch-end (1- (line-beginning-position))))
-                (push  (list unmatch-start unmatch-end) unmatched-lines)))
-          (goto-char match-end)
-          (setq prev-occurrence-end (line-end-position))))
+        (goto-char (overlay-start overlay))
+        (let ((line-beginning (line-beginning-position)))
+          (if (> line-beginning (1+ prev-occurrence-end))
+              (push  (list (1+ prev-occurrence-end) (1- line-beginning)) unmatched-lines)))
+        (goto-char (overlay-end overlay))
+        (setq prev-occurrence-end (line-end-position)))
       (if (< prev-occurrence-end (point-max))
           (push (list (1+ prev-occurrence-end) (point-max)) unmatched-lines))
       (when unmatched-lines
