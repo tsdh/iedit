@@ -441,7 +441,7 @@ occurrences."
           (when (not (eq like-occurrence occurrence))
             (goto-char (+ index (overlay-start like-occurrence)))
             (delete-region (point) (+ (point) change))
-            (insert replacement-str)))))))
+            (insert-and-inherit replacement-str)))))))
 
 (defun iedit-next-occurrence ()
   "Move forward to the next occurrence in the `iedit'.
