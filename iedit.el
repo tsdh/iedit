@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-01-21 14:12:53 Victor Ren>
+;; Time-stamp: <2012-01-24 21:40:20 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.91
@@ -270,34 +270,54 @@ You can also switch to iedit mode from isearch mode directly. The
 current search string is used as occurrence.  All occurrences of
 the current search string are highlighted.
 
-With a prefix argument, the occurrence when iedit is turned off
-last time is used as occurrence.  This is intended to recover
-last iedit which is turned off by mistake.
+With a universal prefix argument and no active region, the
+occurrence when iedit is turned off last time is used as
+occurrence.  This is intended to recover last iedit which is
+turned off by mistake.
+
+With a universal prefix argument and region active, interactively
+edit region as a string rectangle.
 
 Commands:
 \\{iedit-mode-map}"
-  (interactive "P")
+  (interactive "*P")
   (if iedit-mode
       (iedit-done)
-    (let ((occurrence nil))
-      (cond ((and arg iedit-last-occurrence-in-history)
-             (setq occurrence iedit-last-occurrence-in-history))
+    (let (occurrence rect-string)
+      (cond ((and arg
+                  (or transient-mark-mode mark-active (not (equal (mark) (point))))
+                  iedit-last-occurrence-in-history)
+             (setq occurrence iedit-last-occurrence-in-history)) 
+            ;; todo: the simple information is missing
+            ((and arg
+				  transient-mark-mode mark-active (not (equal (mark) (point))))
+             (setq rect-string t))
             ((and transient-mark-mode mark-active (not (equal (mark) (point))))
-             (setq occurrence (buffer-substring-no-properties (mark) (point))))
+             (setq occurrence (regexp-quote (buffer-substring-no-properties
+                                             (mark) (point)))))
             ((and isearch-mode (not (string= isearch-string "")))
-             (setq occurrence (buffer-substring-no-properties (point) isearch-other-end))
+             (setq occurrence (funcall (if isearch-regexp
+                                           'eval
+                                         'regexp-quote)
+                                       (buffer-substring-no-properties
+                                        (point) isearch-other-end)))
              (isearch-exit))
             ((and iedit-current-symbol-default (current-word t))
-             (setq occurrence (current-word))
+             (setq occurrence (regexp-quote (current-word)))
              (when iedit-only-at-symbol-boundaries
                (setq occurrence (concat "\\_<" (regexp-quote occurrence) "\\_>"))))
             (t (error "No candidate of the occurrence, cannot enable iedit mode.")))
-      (deactivate-mark)
-      (iedit-start occurrence))))
+      (if rect-string
+          (let ((beg (region-beginning))
+                (end (region-end)))
+            (deactivate-mark)
+            (iedit-rectangle beg end))
+        (deactivate-mark)
+        (iedit-start occurrence)))))
 
 (defun iedit-start (occurrence-exp)
   "Start an iedit for the occurrence-exp in the current buffer."
-  (setq	iedit-mode " Iedit")
+  (setq	iedit-mode (propertize " Iedit" 'face 'font-lock-warning-face))
   (setq iedit-occurrences-overlays nil)
   (setq iedit-unmatched-lines-invisible iedit-unmatched-lines-invisible-default)
   (setq iedit-case-sensitive iedit-case-sensitive-default)
@@ -322,6 +342,33 @@ Commands:
                (if (> (length occurrence-exp) 50)
                    (concat (substring occurrence-exp 0 50) "...")
                  occurrence-exp)))))
+
+(defun iedit-rectangle (beg end)
+  "Start an iedit for the region as a rectangle"
+  (setq iedit-mode (propertize " Iedit-RECT" 'face 'font-lock-warning-face))
+  (setq iedit-occurrences-overlays nil)
+  (force-mode-line-update)
+  (run-hooks 'iedit-mode-hook)
+  ;; (add-hook 'mouse-leave-buffer-hook 'iedit-done)
+  (add-hook 'kbd-macro-termination-hook 'iedit-done)
+
+  (let ((orig-p (point-marker))
+        (beg-col (progn (goto-char beg) (current-column)))
+        (end-col (progn (goto-char end) (current-column))))
+    (when (< end-col beg-col)
+      (rotatef beg-col end-col))
+    (goto-char beg)
+    (loop do (progn
+               (push (iedit-make-occurrence-overlay (progn
+                                                      (move-to-column beg-col t)
+                                                      (point))
+                                                    (progn
+                                                      (move-to-column end-col t)
+                                                      (point)))
+                     iedit-occurrences-overlays)
+               (forward-line 1))
+          until (> (point) end))
+    (goto-char orig-p)))
 
 (defun iedit-hide-unmatched-lines ()
   "Hide unmatched lines using invisible overlay."
@@ -377,6 +424,15 @@ occurrences if the user starts typing."
     (overlay-put unmatched-lines-overlay 'intangible t)
     unmatched-lines-overlay))
 
+;; `iedit-occurrence-update' gets called twice when change==0 and occurrence
+;; is zero-width
+;; -- for front and back insertion.
+(defvar iedit-last-overlay nil
+  "records processed overlay so they don't get processed multiple times.  See code.")
+(defun iedit-post-command-func ()
+  (remove-hook 'post-command-hook 'iedit-post-command-func t)
+  (setq iedit-last-overlay nil))
+
 (defun iedit-occurrence-update (occurrence after beg end &optional change)
   "Update all occurrences.
 This modification hook is triggered when a user edits any
@@ -389,17 +445,21 @@ exit iedit mode."
     (if (null after) 
         (if (or (< beg (overlay-start occurrence))
                 (> end (overlay-end occurrence)))
-            (iedit-done) ;; 
+            (let ((inhibit-modification-hooks t)) 
+              (iedit-done)) ;; todo: it is a problem to remove the overlays
           (progn (setq iedit-before-modification-beg beg)
                  (setq iedit-before-modification-end end)
                  (unless (eq beg end)
                    (setq iedit-before-modification-string
                          (buffer-substring-no-properties beg end)))))
-      ;; after modification 
+      ;; after modification ;; todo more ellaborate on these conditions
       (when (or (eq 0 change) ;; insertion 
                 (eq beg end)  ;; deletion
+                (not (eq occurrence iedit-last-overlay))
                 (not (string= iedit-before-modification-string
                               (buffer-substring-no-properties beg end))))
+        (setq iedit-last-overlay occurrence)
+        (add-hook 'post-command-hook 'iedit-post-command-func nil t)
         (let ((inhibit-modification-hooks t)
               (offset (- beg (overlay-start occurrence)))
               (value (buffer-substring beg end)))
@@ -463,6 +523,23 @@ exit iedit mode."
 ;;           (goto-char (point-min))
 ;;           (while (re-search-forward iedit-before-modification-string (overlay-start occurrence) t)
 ;;             (replace-match value nil nil)))))))
+;; occurrence and is responsible for updating all other
+;; occurrences."
+;;   (when (and after
+;;              (not undo-in-progress)     ; undo will do all the work
+;;              (not (< beg (overlay-start occurrence)))
+;;              (not (eq occurrence iedit-last-overlay)))
+;;     (setq iedit-last-overlay occurrence)
+;;     (add-hook 'post-command-hook 'iedit-post-command-func nil t)
+;;     (let ((replacement-str (buffer-substring-no-properties beg end))
+;;           (index (- beg (overlay-start occurrence)))
+;;           (inhibit-modification-hooks t))
+;;       (save-excursion
+;;         (dolist (like-occurrence iedit-occurrences-overlays)
+;;           (when (not (eq like-occurrence occurrence))
+;;             (goto-char (+ index (overlay-start like-occurrence)))
+;;             (delete-region (point) (+ (point) change))
+;;             (insert replacement-str)))))))
 
 (defun iedit-next-occurrence ()
   "Move forward to the next occurrence in the `iedit'.
