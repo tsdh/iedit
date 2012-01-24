@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-01-24 23:30:14 Victor Ren>
+;; Time-stamp: <2012-01-25 00:31:11 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.91
@@ -68,7 +68,7 @@
 ;; Tassilo Horn <tassilo@member.fsf.org> added an option to match only complete
 ;; words, not inside words
 
-;; Le Wang <l26wang@gmail.com> proposed to match only complete symbols, not inside symbols.
+;; Le Wang <l26wang@gmail.com> proposed to match only complete symbols, not inside symbols, contribite iedit-rect mode
 
 ;;; Code:
 
@@ -121,7 +121,7 @@ default."
 
 (or (assq 'iedit-mode minor-mode-alist)
     (nconc minor-mode-alist
-	   (list '(iedit-mode iedit-mode))))
+       (list '(iedit-mode iedit-mode))))
 
 (defvar iedit-occurrences-overlays nil
   "The occurrences slot contains a list of overlays used to
@@ -140,6 +140,10 @@ unmatched lines are hided.")
 (defvar iedit-last-occurrence-in-history nil
   "This is buffer local variable which is the occurrence when
 iedit mode is turned off last time.")
+
+(defvar iedit-current-occurrence-complete-symbol nil
+  "This is buffer local variable which indicates the occurrence
+only matches complete symbol.")
 
 (defvar iedit-forward-success t
   "This is buffer local variable which indicates the moving
@@ -221,9 +225,9 @@ This is like `describe-bindings', but displays only Iedit keys."
   (interactive)
   (let (same-window-buffer-names same-window-regexps)
     (with-help-window "*Help*"
-					  (with-current-buffer standard-output
-						(princ "Iedit Mode Bindings:\n")
-						(princ (substitute-command-keys "\\{iedit-mode-map}"))))))
+      (with-current-buffer standard-output
+        (princ "Iedit Mode Bindings:\n")
+        (princ (substitute-command-keys "\\{iedit-mode-map}"))))))
 
 (defun iedit-describe-key ()
   "Display documentation of the function invoked by iedit key."
@@ -296,26 +300,24 @@ Commands:
       (iedit-done)
     (let (occurrence rect-string)
       (cond ((and arg
-                  (or transient-mark-mode mark-active (not (equal (mark) (point))))
+                  (or (not transient-mark-mode) (not mark-active)
+                      (equal (mark) (point)))
                   iedit-last-occurrence-in-history)
              (setq occurrence iedit-last-occurrence-in-history)) 
-            ;; todo: the simple information is missing
             ((and arg
-				  transient-mark-mode mark-active (not (equal (mark) (point))))
+                  transient-mark-mode mark-active (not (equal (mark) (point))))
              (setq rect-string t))
             ((and transient-mark-mode mark-active (not (equal (mark) (point))))
              (setq occurrence (regexp-quote (buffer-substring-no-properties
                                              (mark) (point)))))
             ((and isearch-mode (not (string= isearch-string "")))
-             (setq occurrence (funcall (if isearch-regexp
-                                           'eval
-                                         'regexp-quote)
-                                       (buffer-substring-no-properties
-                                        (point) isearch-other-end)))
+             (setq occurrence (regexp-quote (buffer-substring-no-properties
+                                             (point) isearch-other-end)))
              (isearch-exit))
             ((and iedit-current-symbol-default (current-word t))
              (setq occurrence (regexp-quote (current-word)))
              (when iedit-only-at-symbol-boundaries
+               (setq iedit-current-occurrence-complete-symbol t)
                (setq occurrence (concat "\\_<" (regexp-quote occurrence) "\\_>"))))
             (t (error "No candidate of the occurrence, cannot enable iedit mode.")))
       (if rect-string
@@ -328,7 +330,7 @@ Commands:
 
 (defun iedit-start (occurrence-exp)
   "Start an iedit for the occurrence-exp in the current buffer."
-  (setq	iedit-mode (propertize " Iedit" 'face 'font-lock-warning-face))
+  (setq iedit-mode (propertize " Iedit" 'face 'font-lock-warning-face))
   (setq iedit-occurrences-overlays nil)
   (setq iedit-unmatched-lines-invisible iedit-unmatched-lines-invisible-default)
   (setq iedit-case-sensitive iedit-case-sensitive-default)
@@ -415,9 +417,15 @@ iedit-occurrence-update is called for a removed overlay."
 (defun iedit-done ()
   "Exit iedit mode."
   (let ((ov (car iedit-occurrences-overlays)))
-    (if ov
-        (setq iedit-last-occurrence-in-history
-              (buffer-substring-no-properties (overlay-start ov) (overlay-end ov)))))
+    (setq iedit-last-occurrence-in-history
+          (if (and ov (not (eq (overlay-start ov) (overlay-end ov))))
+              (let ((substring (buffer-substring-no-properties (overlay-start ov) (overlay-end ov))))
+                (if iedit-current-occurrence-complete-symbol
+                    (concat "\\_<" substring "\\_>")
+                  substring))
+            nil)
+          ))
+  (setq iedit-current-occurrence-complete-symbol nil)
   (remove-overlays (point-min) (point-max) iedit-occurrence-overlay-name t)
   (remove-overlays (point-min) (point-max) iedit-invisible-overlay-name t)
   (setq iedit-occurrences-overlays nil)
@@ -456,14 +464,14 @@ Current supported edits are insertion, yank, deletion and replacement.
 If this modification is going out of the occurrence, it will
 exit iedti mode."
   (when (and (not iedit-aborting )
-			 (not undo-in-progress)) ; undo will do all the update
+             (not undo-in-progress)) ; undo will do all the update
     ;; before modification
     (if (null after) 
         (if (or (< beg (overlay-start occurrence))
                 (> end (overlay-end occurrence)))
-			(progn (setq iedit-aborting t) ; abort iedit-mode
-				   (add-hook 'post-command-hook 'iedit-reset-aborting nil t))
-		  (progn (setq iedit-before-modification-beg beg)
+            (progn (setq iedit-aborting t) ; abort iedit-mode
+                   (add-hook 'post-command-hook 'iedit-reset-aborting nil t))
+          (progn (setq iedit-before-modification-beg beg)
                  (setq iedit-before-modification-end end)
                  (unless (eq beg end)
                    (setq iedit-before-modification-string
