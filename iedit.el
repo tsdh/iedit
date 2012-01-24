@@ -477,11 +477,11 @@ exit iedti mode."
                    (setq iedit-before-modification-string
                          (buffer-substring-no-properties beg end)))))
       ;; after modification ;; todo more ellaborate on these conditions
-      (when (or (eq 0 change) ;; insertion
-                (eq beg end)  ;; deletion
-                (not (eq occurrence iedit-last-overlay))
-                (not (string= iedit-before-modification-string
-                              (buffer-substring-no-properties beg end))))
+      (when (and (or (eq 0 change) ;; insertion
+                     (eq beg end)  ;; deletion
+                     (not (string= iedit-before-modification-string
+                                   (buffer-substring-no-properties beg end))))
+                 (not (eq occurrence iedit-last-overlay)))
         (setq iedit-last-overlay occurrence)
         (add-hook 'post-command-hook 'iedit-reset-last-overlay nil t)
         (let ((inhibit-modification-hooks t)
