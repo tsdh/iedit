@@ -242,21 +242,20 @@ This is like `describe-bindings', but displays only Iedit keys."
     (describe-function 'iedit-mode)))
 
 ;;; Define iedit mode map
-(defvar iedit-mode-map nil
+(defvar iedit-mode-map
+  (let ((map (make-sparse-key-map)))
+    (setq iedit-mode-map (make-sparse-keymap))
+    ;; Default key bindings
+    (define-key iedit-mode-map (kbd "TAB") 'iedit-next-occurrence)
+    (define-key iedit-mode-map (kbd "<S-tab>") 'iedit-prev-occurrence)
+    (define-key iedit-mode-map (kbd "<S-iso-lefttab>") 'iedit-prev-occurrence)
+    (define-key iedit-mode-map (kbd "<backtab>") 'iedit-prev-occurrence)
+    (define-key iedit-mode-map (kbd "C-'") 'iedit-toggle-unmatched-lines-visible)
+    (define-key iedit-mode-map (char-to-string help-char) iedit-help-map)
+    (define-key iedit-mode-map [help] iedit-help-map)
+    (define-key iedit-mode-map [f1] iedit-help-map)
+    map)
   "Keymap used while iedit mode is enabled.")
-
-(if iedit-mode-map
-    nil
-  (setq iedit-mode-map (make-sparse-keymap))
-  ;; Default key bindings
-  (define-key iedit-mode-map (kbd "TAB") 'iedit-next-occurrence)
-  (define-key iedit-mode-map (kbd "<S-tab>") 'iedit-prev-occurrence)
-  (define-key iedit-mode-map (kbd "<S-iso-lefttab>") 'iedit-prev-occurrence)
-  (define-key iedit-mode-map (kbd "<backtab>") 'iedit-prev-occurrence)
-  (define-key iedit-mode-map (kbd "C-'") 'iedit-toggle-unmatched-lines-visible)
-  (define-key iedit-mode-map (char-to-string help-char) iedit-help-map)
-  (define-key iedit-mode-map [help] iedit-help-map)
-  (define-key iedit-mode-map [f1] iedit-help-map))
 
 (or (assq 'iedit-mode minor-mode-map-alist)
     (setq minor-mode-map-alist
