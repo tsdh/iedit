@@ -493,7 +493,7 @@ exit iedti mode."
                 (dolist (like-occurrence (remove occurrence iedit-occurrences-overlays))
                   (progn
                     (goto-char (+ (overlay-start like-occurrence) offset))
-                    (insert value)))
+                    (insert-and-inherit value)))
               ;; deletion
               (dolist (like-occurrence (remove occurrence iedit-occurrences-overlays))
                 (let* ((beginning (+ (overlay-start like-occurrence) offset))
@@ -501,7 +501,7 @@ exit iedti mode."
                   (delete-region beginning ending)
                   (unless (eq beg end) ;; replacement
                     (goto-char beginning)
-                    (insert value)))))))))))
+                    (insert-and-inherit value)))))))))))
 ;; (elp-instrument-list '(insert delete-region goto-char iedit-occurrence-update buffer-substring-no-properties string= re-search-forward replace-match))
 
 ;; slowest verion:
