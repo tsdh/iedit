@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-01-24 21:40:20 Victor Ren>
+;; Time-stamp: <2012-01-24 23:30:14 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.91
@@ -142,7 +142,7 @@ unmatched lines are hided.")
 iedit mode is turned off last time.")
 
 (defvar iedit-forward-success t
-  "This is buffer local variable which indicate the moving
+  "This is buffer local variable which indicates the moving
 forward or backward successful")
 
 (defvar iedit-before-modification-beg 0
@@ -155,6 +155,15 @@ before a change is made.")
 (defvar iedit-before-modification-string ""
   "This is buffer local variable which is the buffer substring that is going to be changed.")
 
+;; `iedit-occurrence-update' gets called twice when change==0 and occurrence
+;; is zero-width
+;; -- for front and back insertion.
+(defvar iedit-last-overlay nil
+  "This is buffer local variable which records processed overlay so they don't get processed multiple times.  See code.")
+
+(defvar iedit-aborting nil
+  "This is buffer local variable which indicates iedit-mode is aborting.")
+
 (make-variable-buffer-local 'iedit-occurrences-overlays)
 (make-variable-buffer-local 'iedit-unmatched-lines-invisible)
 (make-variable-buffer-local 'iedit-case-sensitive)
@@ -163,6 +172,8 @@ before a change is made.")
 (make-variable-buffer-local 'iedit-before-modification-beg)
 (make-variable-buffer-local 'iedit-before-modification-end)
 (make-variable-buffer-local 'iedit-before-modification-string)
+(make-variable-buffer-local 'iedit-last-overlay)
+(make-variable-buffer-local 'iedit-aborting)
 
 (defconst iedit-occurrence-overlay-name 'iedit-occurrence-overlay-name)
 (defconst iedit-invisible-overlay-name 'iedit-invisible-overlay-name)
@@ -210,9 +221,9 @@ This is like `describe-bindings', but displays only Iedit keys."
   (interactive)
   (let (same-window-buffer-names same-window-regexps)
     (with-help-window "*Help*"
-      (with-current-buffer standard-output
-	(princ "Iedit Mode Bindings:\n")
-	(princ (substitute-command-keys "\\{iedit-mode-map}"))))))
+					  (with-current-buffer standard-output
+						(princ "Iedit Mode Bindings:\n")
+						(princ (substitute-command-keys "\\{iedit-mode-map}"))))))
 
 (defun iedit-describe-key ()
   "Display documentation of the function invoked by iedit key."
@@ -343,6 +354,19 @@ Commands:
                    (concat (substring occurrence-exp 0 50) "...")
                  occurrence-exp)))))
 
+(defun iedit-reset-last-overlay ()
+  "`post-command-hook' function to reset iedit-last-overlay and also remove itself from post-command-hook."
+  (remove-hook 'post-command-hook 'iedit-reset-last-overlay t)
+  (setq iedit-last-overlay nil))
+
+(defun iedit-reset-aborting ()
+  "Turning iedit-mode off and reset iedit-aborting. `iedit-done'
+is postponed after the command is executed for avoiding
+iedit-occurrence-update is called for a removed overlay."
+  (iedit-done)
+  (remove-hook 'post-command-hook 'iedit-reset-aborting t)
+  (setq iedit-aborting nil))
+
 (defun iedit-rectangle (beg end)
   "Start an iedit for the region as a rectangle"
   (setq iedit-mode (propertize " Iedit-RECT" 'face 'font-lock-warning-face))
@@ -424,30 +448,22 @@ occurrences if the user starts typing."
     (overlay-put unmatched-lines-overlay 'intangible t)
     unmatched-lines-overlay))
 
-;; `iedit-occurrence-update' gets called twice when change==0 and occurrence
-;; is zero-width
-;; -- for front and back insertion.
-(defvar iedit-last-overlay nil
-  "records processed overlay so they don't get processed multiple times.  See code.")
-(defun iedit-post-command-func ()
-  (remove-hook 'post-command-hook 'iedit-post-command-func t)
-  (setq iedit-last-overlay nil))
-
 (defun iedit-occurrence-update (occurrence after beg end &optional change)
   "Update all occurrences.
 This modification hook is triggered when a user edits any
 occurrence and is responsible for updating all other occurrences.
 Current supported edits are insertion, yank, deletion and replacement.
 If this modification is going out of the occurrence, it will
-exit iedit mode."
-  (when (not undo-in-progress) ; undo will do all the update
+exit iedti mode."
+  (when (and (not iedit-aborting )
+			 (not undo-in-progress)) ; undo will do all the update
     ;; before modification
     (if (null after) 
         (if (or (< beg (overlay-start occurrence))
                 (> end (overlay-end occurrence)))
-            (let ((inhibit-modification-hooks t)) 
-              (iedit-done)) ;; todo: it is a problem to remove the overlays
-          (progn (setq iedit-before-modification-beg beg)
+			(progn (setq iedit-aborting t) ; abort iedit-mode
+				   (add-hook 'post-command-hook 'iedit-reset-aborting nil t))
+		  (progn (setq iedit-before-modification-beg beg)
                  (setq iedit-before-modification-end end)
                  (unless (eq beg end)
                    (setq iedit-before-modification-string
@@ -459,7 +475,7 @@ exit iedit mode."
                 (not (string= iedit-before-modification-string
                               (buffer-substring-no-properties beg end))))
         (setq iedit-last-overlay occurrence)
-        (add-hook 'post-command-hook 'iedit-post-command-func nil t)
+        (add-hook 'post-command-hook 'iedit-reset-last-overlay nil t)
         (let ((inhibit-modification-hooks t)
               (offset (- beg (overlay-start occurrence)))
               (value (buffer-substring beg end)))
@@ -530,7 +546,7 @@ exit iedit mode."
 ;;              (not (< beg (overlay-start occurrence)))
 ;;              (not (eq occurrence iedit-last-overlay)))
 ;;     (setq iedit-last-overlay occurrence)
-;;     (add-hook 'post-command-hook 'iedit-post-command-func nil t)
+;;     (add-hook 'post-command-hook 'iedit-reset-last-overlay nil t)
 ;;     (let ((replacement-str (buffer-substring-no-properties beg end))
 ;;           (index (- beg (overlay-start occurrence)))
 ;;           (inhibit-modification-hooks t))
