@@ -384,15 +384,17 @@ iedit-occurrence-update is called for a removed overlay."
       (rotatef beg-col end-col))
     (goto-char beg)
     (loop do (progn
-               (push (iedit-make-occurrence-overlay (progn
-                                                      (move-to-column beg-col t)
-                                                      (point))
-                                                    (progn
-                                                      (move-to-column end-col t)
-                                                      (point)))
+               (push (iedit-make-occurrence-overlay
+                      (progn
+                        (move-to-column beg-col t)
+                        (point))
+                      (progn
+                        (move-to-column end-col t)
+                        (point)))
                      iedit-occurrences-overlays)
                (forward-line 1))
           until (> (point) end))
+    (setq iedit-occurrences-overlays (nreverse iedit-occurrences-overlays))
     (goto-char orig-p)))
 
 (defun iedit-hide-unmatched-lines ()
