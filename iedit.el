@@ -469,10 +469,9 @@ exit iedti mode."
                    (add-hook 'post-command-hook 'iedit-reset-aborting nil t))
           (progn (setq iedit-before-modification-beg beg)
                  (setq iedit-before-modification-end end)
-                 (unless (eq beg end)
-                   (setq iedit-before-modification-string
-                         (buffer-substring-no-properties beg end)))))
-      ;; after modification ;; todo more ellaborate on these conditions
+                 (setq iedit-before-modification-string
+                       (buffer-substring-no-properties beg end))))
+      ;; after modification
 
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;; Check if we are inserting into zero-width occurrence. ;;
