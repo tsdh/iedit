@@ -160,10 +160,10 @@ before a change is made.")
   "This is buffer local variable which is the buffer substring that is going to be changed.")
 
 ;; `iedit-occurrence-update' gets called twice when change==0 and occurrence
-;; is zero-width
+;; is zero-width (beg==end)
 ;; -- for front and back insertion.
-(defvar iedit-last-overlay nil
-  "This is buffer local variable which records processed overlay so they don't get processed multiple times.  See code.")
+(defvar iedit-skipped-modification-once nil
+  "Variable used to skip first modification hook run when insertion against a zero-width occurrence.")
 
 (defvar iedit-aborting nil
   "This is buffer local variable which indicates iedit-mode is aborting.")
@@ -355,11 +355,6 @@ Commands:
                    (concat (substring occurrence-exp 0 50) "...")
                  occurrence-exp)))))
 
-(defun iedit-reset-last-overlay ()
-  "`post-command-hook' function to reset iedit-last-overlay and also remove itself from post-command-hook."
-  (remove-hook 'post-command-hook 'iedit-reset-last-overlay t)
-  (setq iedit-last-overlay nil))
-
 (defun iedit-reset-aborting ()
   "Turning iedit-mode off and reset iedit-aborting. `iedit-done'
 is postponed after the command is executed for avoiding
@@ -478,31 +473,44 @@ exit iedti mode."
                    (setq iedit-before-modification-string
                          (buffer-substring-no-properties beg end)))))
       ;; after modification ;; todo more ellaborate on these conditions
-      (when (and (or (eq 0 change) ;; insertion
-                     (eq beg end)  ;; deletion
-                     (not (string= iedit-before-modification-string
-                                   (buffer-substring-no-properties beg end))))
-                 (not (eq occurrence iedit-last-overlay)))
-        (setq iedit-last-overlay occurrence)
-        (add-hook 'post-command-hook 'iedit-reset-last-overlay nil t)
-        (let ((inhibit-modification-hooks t)
-              (offset (- beg (overlay-start occurrence)))
-              (value (buffer-substring beg end)))
-          (save-excursion
-            ;; insertion or yank
-            (if (eq 0 change)
+
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      ;; Check if we are inserting into zero-width occurrence. ;;
+      ;;                                                       ;;
+      ;; If so, then TWO modificaiton hooks will be called --  ;;
+      ;; "insert-in-front-hooks" and "insert-behind-hooks".    ;;
+      ;;                                                       ;;
+      ;; We need to run just once.                             ;;
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+      (if (and (= beg (overlay-start occurrence))
+               (= end (overlay-end occurrence))
+               (= change 0)
+               (not iedit-skipped-modification-once))
+          (setq iedit-skipped-modification-once t)
+        (setq iedit-skipped-modification-once nil)
+        (when (and (or (eq 0 change) ;; insertion
+                       (eq beg end)  ;; deletion
+                       (not (string= iedit-before-modification-string
+                                     (buffer-substring-no-properties beg end)))))
+          (let ((inhibit-modification-hooks t)
+                (offset (- beg (overlay-start occurrence)))
+                (value (buffer-substring beg end)))
+            (save-excursion
+              ;; insertion or yank
+              (if (eq 0 change)
+                  (dolist (like-occurrence (remove occurrence iedit-occurrences-overlays))
+                    (progn
+                      (goto-char (+ (overlay-start like-occurrence) offset))
+                      (insert-and-inherit value)))
+                ;; deletion
                 (dolist (like-occurrence (remove occurrence iedit-occurrences-overlays))
-                  (progn
-                    (goto-char (+ (overlay-start like-occurrence) offset))
-                    (insert-and-inherit value)))
-              ;; deletion
-              (dolist (like-occurrence (remove occurrence iedit-occurrences-overlays))
-                (let* ((beginning (+ (overlay-start like-occurrence) offset))
-                       (ending (+ beginning change)))
-                  (delete-region beginning ending)
-                  (unless (eq beg end) ;; replacement
-                    (goto-char beginning)
-                    (insert-and-inherit value)))))))))))
+                  (let* ((beginning (+ (overlay-start like-occurrence) offset))
+                         (ending (+ beginning change)))
+                    (delete-region beginning ending)
+                    (unless (eq beg end) ;; replacement
+                      (goto-char beginning)
+                      (insert-and-inherit value))))))))))))
 ;; (elp-instrument-list '(insert delete-region goto-char iedit-occurrence-update buffer-substring-no-properties string= re-search-forward replace-match))
 
 ;; slowest verion:
