@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-01-27 17:26:28 Victor Ren>
+;; Time-stamp: <2012-01-27 23:07:31 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.91
@@ -149,13 +149,6 @@ only matches complete symbol.")
   "This is buffer local variable which indicates the moving
 forward or backward successful")
 
-(defvar iedit-before-modification-beg 0
-  "This is buffer local variable which is the argment `end' of hook function
-before a change is made.")
-
-(defvar iedit-before-modification-end 0
-  "This is buffer local variable which is the argment `end' of hook function
-before a change is made.")
 (defvar iedit-before-modification-string ""
   "This is buffer local variable which is the buffer substring that is going to be changed.")
 
@@ -173,8 +166,6 @@ before a change is made.")
 (make-variable-buffer-local 'iedit-case-sensitive)
 (make-variable-buffer-local 'iedit-last-occurrence-in-history)
 (make-variable-buffer-local 'iedit-forward-success)
-(make-variable-buffer-local 'iedit-before-modification-beg)
-(make-variable-buffer-local 'iedit-before-modification-end)
 (make-variable-buffer-local 'iedit-before-modification-string)
 (make-variable-buffer-local 'iedit-aborting)
 
@@ -411,10 +402,12 @@ iedit-occurrence-update is called for a removed overlay."
 
 (defun iedit-done ()
   "Exit iedit mode."
-  (let ((ov (car iedit-occurrences-overlays)))
+  (let* ((ov (car iedit-occurrences-overlays))
+         (beg (overlay-start ov))
+         (end (overlay-end ov)))
     (setq iedit-last-occurrence-in-history
-          (if (and ov (not (eq (overlay-start ov) (overlay-end ov))))
-              (let ((substring (buffer-substring-no-properties (overlay-start ov) (overlay-end ov))))
+          (if (and ov (/=  beg end))
+              (let ((substring (buffer-substring-no-properties beg end)))
                 (if iedit-current-occurrence-complete-symbol
                     (concat "\\_<" substring "\\_>")
                   substring))
@@ -466,10 +459,8 @@ exit iedti mode."
                 (> end (overlay-end occurrence)))
             (progn (setq iedit-aborting t) ; abort iedit-mode
                    (add-hook 'post-command-hook 'iedit-reset-aborting nil t))
-          (progn (setq iedit-before-modification-beg beg)
-                 (setq iedit-before-modification-end end)
-                 (setq iedit-before-modification-string
-                       (buffer-substring-no-properties beg end))))
+          (setq iedit-before-modification-string
+                (buffer-substring-no-properties beg end)))
       ;; after modification
 
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -509,7 +500,7 @@ exit iedti mode."
                     (unless (eq beg end) ;; replacement
                       (goto-char beginning)
                       (insert-and-inherit value))))))))))))
-;; (elp-instrument-list '(insert delete-region goto-char iedit-occurrence-update buffer-substring-no-properties string= re-search-forward replace-match))
+;; (elp-instrument-list '(insert-and-inherit delete-region goto-char iedit-occurrence-update buffer-substring-no-properties string= re-search-forward replace-match))
 
 ;; slowest verion:
 ;; (defun iedit-occurrence-update (occurrence after beg end &optional change)
@@ -554,23 +545,6 @@ exit iedti mode."
 ;;           (goto-char (point-min))
 ;;           (while (re-search-forward iedit-before-modification-string (overlay-start occurrence) t)
 ;;             (replace-match value nil nil)))))))
-;; occurrence and is responsible for updating all other
-;; occurrences."
-;;   (when (and after
-;;              (not undo-in-progress)     ; undo will do all the work
-;;              (not (< beg (overlay-start occurrence)))
-;;              (not (eq occurrence iedit-last-overlay)))
-;;     (setq iedit-last-overlay occurrence)
-;;     (add-hook 'post-command-hook 'iedit-reset-last-overlay nil t)
-;;     (let ((replacement-str (buffer-substring-no-properties beg end))
-;;           (index (- beg (overlay-start occurrence)))
-;;           (inhibit-modification-hooks t))
-;;       (save-excursion
-;;         (dolist (another-occurrence iedit-occurrences-overlays)
-;;           (when (not (eq another-occurrence occurrence))
-;;             (goto-char (+ index (overlay-start another-occurrence)))
-;;             (delete-region (point) (+ (point) change))
-;;             (insert replacement-str)))))))
 
 (defun iedit-next-occurrence ()
   "Move forward to the next occurrence in the `iedit'.
