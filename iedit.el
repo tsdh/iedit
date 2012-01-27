@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-01-25 00:31:11 Victor Ren>
+;; Time-stamp: <2012-01-27 17:26:28 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.91
@@ -176,7 +176,6 @@ before a change is made.")
 (make-variable-buffer-local 'iedit-before-modification-beg)
 (make-variable-buffer-local 'iedit-before-modification-end)
 (make-variable-buffer-local 'iedit-before-modification-string)
-(make-variable-buffer-local 'iedit-last-overlay)
 (make-variable-buffer-local 'iedit-aborting)
 
 (defconst iedit-occurrence-overlay-name 'iedit-occurrence-overlay-name)
@@ -488,23 +487,23 @@ exit iedti mode."
                (not iedit-skipped-modification-once))
           (setq iedit-skipped-modification-once t)
         (setq iedit-skipped-modification-once nil)
-        (when (and (or (eq 0 change) ;; insertion
-                       (eq beg end)  ;; deletion
-                       (not (string= iedit-before-modification-string
-                                     (buffer-substring-no-properties beg end)))))
+        (when (or (eq 0 change) ;; insertion
+                  (eq beg end)  ;; deletion
+                  (not (string= iedit-before-modification-string
+                                (buffer-substring-no-properties beg end))))
           (let ((inhibit-modification-hooks t)
                 (offset (- beg (overlay-start occurrence)))
-                (value (buffer-substring beg end)))
+                (value (buffer-substring-no-properties beg end)))
             (save-excursion
               ;; insertion or yank
               (if (eq 0 change)
-                  (dolist (like-occurrence (remove occurrence iedit-occurrences-overlays))
+                  (dolist (another-occurrence (remove occurrence iedit-occurrences-overlays))
                     (progn
-                      (goto-char (+ (overlay-start like-occurrence) offset))
+                      (goto-char (+ (overlay-start another-occurrence) offset))
                       (insert-and-inherit value)))
                 ;; deletion
-                (dolist (like-occurrence (remove occurrence iedit-occurrences-overlays))
-                  (let* ((beginning (+ (overlay-start like-occurrence) offset))
+                (dolist (another-occurrence (remove occurrence iedit-occurrences-overlays))
+                  (let* ((beginning (+ (overlay-start another-occurrence) offset))
                          (ending (+ beginning change)))
                     (delete-region beginning ending)
                     (unless (eq beg end) ;; replacement
@@ -523,12 +522,12 @@ exit iedti mode."
 ;;                   (overlay-start occurrence) (overlay-end occurrence)))
 ;;           (inhibit-modification-hooks t))
 ;;       (save-excursion
-;;         (dolist (like-occurrence iedit-occurrences-overlays)
-;;           (if (not (eq like-occurrence occurrence))
+;;         (dolist (another-occurrence iedit-occurrences-overlays)
+;;           (if (not (eq another-occurrence occurrence))
 ;;               (progn
-;;                 (goto-char (overlay-start like-occurrence))
-;;                 (delete-region (overlay-start like-occurrence)
-;;                                (overlay-end like-occurrence))
+;;                 (goto-char (overlay-start another-occurrence))
+;;                 (delete-region (overlay-start another-occurrence)
+;;                                (overlay-end another-occurrence))
 ;;                 (insert value))))))))
 
 ;; ;; todo \\_<
@@ -567,9 +566,9 @@ exit iedti mode."
 ;;           (index (- beg (overlay-start occurrence)))
 ;;           (inhibit-modification-hooks t))
 ;;       (save-excursion
-;;         (dolist (like-occurrence iedit-occurrences-overlays)
-;;           (when (not (eq like-occurrence occurrence))
-;;             (goto-char (+ index (overlay-start like-occurrence)))
+;;         (dolist (another-occurrence iedit-occurrences-overlays)
+;;           (when (not (eq another-occurrence occurrence))
+;;             (goto-char (+ index (overlay-start another-occurrence)))
 ;;             (delete-region (point) (+ (point) change))
 ;;             (insert replacement-str)))))))
 
