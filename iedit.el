@@ -2,10 +2,10 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-01-27 23:33:49 Victor Ren>
+;; Time-stamp: <2012-01-29 00:15:42 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
-;; Version: 0.91
+;; Version: 0.92
 ;; X-URL: http://www.emacswiki.org/emacs/iedit.el
 ;; Compatibility: GNU Emacs: 22.x, 23.x, 24.x
 
@@ -56,11 +56,11 @@
 ;; (define-key isearch-mode-map (kbd "C-;") 'iedit-mode)
 
 ;;; todo:
+;; - profile to find bottleneck for huge file
+;; - Add more easy access keys for whole occurrence
 ;; - C-n,C-p is slow when unmatched lines are hided.
-;; - Lazy highlight feature (from isearch)?
 ;; - toggle blank line between matched lines?
 ;; - ert unit test
-;; - profile to find bottleneck for huge file
 
 ;;; Contributors
 ;; Adam Lindberg <eproxus@gmail.com> added a case sensitivity option that can be toggled.
@@ -68,7 +68,8 @@
 ;; Tassilo Horn <tassilo@member.fsf.org> added an option to match only complete
 ;; words, not inside words
 
-;; Le Wang <l26wang@gmail.com> proposed to match only complete symbols, not inside symbols, contribite iedit-rect mode
+;; Le  Wang <l26wang@gmail.com>  proposed to  match only  complete symbols,  not
+;; inside symbols, contribited iedit-rect mode
 
 ;;; Code:
 
@@ -318,14 +319,10 @@ Commands:
 
 (defun iedit-start (occurrence-exp)
   "Start an iedit for the occurrence-exp in the current buffer."
-  (setq iedit-mode (propertize " Iedit" 'face 'font-lock-warning-face))
   (setq iedit-occurrences-overlays nil)
   (setq iedit-unmatched-lines-invisible iedit-unmatched-lines-invisible-default)
   (setq iedit-case-sensitive iedit-case-sensitive-default)
-  (force-mode-line-update)
-  (run-hooks 'iedit-mode-hook)
-  ;; (add-hook 'mouse-leave-buffer-hook 'iedit-done)
-  (add-hook 'kbd-macro-termination-hook 'iedit-done)
+  (setq iedit-aborting nil)
   ;; Find and record each occurrence's markers and add the overlay to the occurrences
   (let ((counter 0)
         (case-fold-search (not iedit-case-sensitive)))
@@ -334,15 +331,25 @@ Commands:
       (while (re-search-forward occurrence-exp nil t)
         (push (iedit-make-occurrence-overlay (match-beginning 0) (match-end 0))
               iedit-occurrences-overlays)
-        (setq counter (1+ counter)))      ; at less 1
-      (setq iedit-occurrences-overlays (nreverse iedit-occurrences-overlays))
-      (if iedit-unmatched-lines-invisible
-          (iedit-hide-unmatched-lines))
+        (setq counter (1+ counter)))
+      (if (= 0 counter)
+          (error "0 matches for \"%s\""
+                 (if (> (length occurrence-exp) 50)
+                     (concat (substring occurrence-exp 0 50) "...")
+                   occurrence-exp))
+        (setq iedit-occurrences-overlays (nreverse iedit-occurrences-overlays))
+        (if iedit-unmatched-lines-invisible
+            (iedit-hide-unmatched-lines)))
       (message "%d matches for \"%s\""
                counter
                (if (> (length occurrence-exp) 50)
                    (concat (substring occurrence-exp 0 50) "...")
-                 occurrence-exp)))))
+                 occurrence-exp))))
+  (setq iedit-mode (propertize " Iedit" 'face 'font-lock-warning-face))
+  (force-mode-line-update)
+  (run-hooks 'iedit-mode-hook)
+  ;; (add-hook 'mouse-leave-buffer-hook 'iedit-done)
+  (add-hook 'kbd-macro-termination-hook 'iedit-done))
 
 (defun iedit-reset-aborting ()
   "Turning iedit-mode off and reset iedit-aborting. `iedit-done'
