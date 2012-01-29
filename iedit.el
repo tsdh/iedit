@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-01-29 22:32:06 Victor Ren>
+;; Time-stamp: <2012-01-29 23:15:17 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.92
@@ -69,7 +69,7 @@
 ;; words, not inside words
 
 ;; Le  Wang <l26wang@gmail.com>  proposed to  match only  complete symbols,  not
-;; inside symbols, contribited iedit-rect mode
+;; inside symbols, contributed iedit-rect mode
 
 ;;; Code:
 
@@ -178,7 +178,6 @@ forward or backward successful")
 
 (defvar iedit-help-map
   (let ((map (make-sparse-keymap)))
-;;    (define-key map [t] 'iedit-other-control-char)
     (define-key map (char-to-string help-char) 'iedit-help-for-help)
     (define-key map [help] 'iedit-help-for-help)
     (define-key map [f1] 'iedit-help-for-help)
@@ -255,8 +254,14 @@ This is like `describe-bindings', but displays only Iedit keys."
     (define-key map (kbd "M-r") 'iedit-replace-occurrences)
     (define-key map (kbd "M-c") 'iedit-clear-occurrences)
     (define-key map (kbd "M-d") 'iedit-delete-occurrences)
+    (define-key map (kbd "C-?") 'iedit-help-for-occurrences)
     map)
   "Keymap used within overlays.")
+
+(defun iedit-help-for-occurrences ()
+  "Display iedit-occurrence-local-map."
+  (interactive)
+  (message "M-u/l:up/downcase M-r:replace M-c:clear M-d:delete C-?:help"))
 
 (or (assq 'iedit-mode minor-mode-map-alist)
     (setq minor-mode-map-alist
@@ -468,7 +473,7 @@ This modification hook is triggered when a user edits any
 occurrence and is responsible for updating all other occurrences.
 Current supported edits are insertion, yank, deletion and replacement.
 If this modification is going out of the occurrence, it will
-exit iedti mode."
+exit iedit mode."
   (when (and (not iedit-aborting )
              (not undo-in-progress)) ; undo will do all the update
     ;; before modification
@@ -484,7 +489,7 @@ exit iedti mode."
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;; Check if we are inserting into zero-width occurrence. ;;
       ;;                                                       ;;
-      ;; If so, then TWO modificaiton hooks will be called --  ;;
+      ;; If so, then TWO modification hooks will be called --  ;;
       ;; "insert-in-front-hooks" and "insert-behind-hooks".    ;;
       ;;                                                       ;;
       ;; We need to run just once.                             ;;
@@ -520,7 +525,7 @@ exit iedti mode."
                       (insert-and-inherit value))))))))))))
 ;; (elp-instrument-list '(insert-and-inherit delete-region goto-char iedit-occurrence-update buffer-substring-no-properties string= re-search-forward replace-match))
 
-;; slowest verion:
+;; slowest version:
 ;; (defun iedit-occurrence-update (occurrence after beg end &optional change)
 ;;   "Update all occurrences.
 ;; This modification hook is triggered when a user edits any
@@ -627,7 +632,7 @@ the buffer."
       (iedit-hide-unmatched-lines)
     (remove-overlays (point-min) (point-max) iedit-invisible-overlay-name t)))
 
-(defun iedit-foreach-occurence-call (function &optional string)
+(defun iedit-foreach-occurrence-call (function &optional string)
   "Call function for each occurrence."
   (let* ((ov (car iedit-occurrences-overlays))
          (beg (overlay-start ov))
@@ -637,22 +642,22 @@ the buffer."
         (dolist (occurrence  iedit-occurrences-overlays)
           (if string
               (funcall function (overlay-start occurrence) (overlay-end occurrence) string)
-          (funcall function (overlay-start occurrence) (overlay-end occurrence))))))))
+            (funcall function (overlay-start occurrence) (overlay-end occurrence))))))))
 
 (defun iedit-upcase-occurrences ()
   "Covert occurrences to upper case."
   (interactive)
-  (iedit-foreach-occurence-call 'upcase-region))
+  (iedit-foreach-occurrence-call 'upcase-region))
 
 (defun iedit-downcase-occurrences()
   "Covert occurrences to lower case."
   (interactive)
-  (iedit-foreach-occurence-call 'downcase-region))
+  (iedit-foreach-occurrence-call 'downcase-region))
 
 (defun iedit-replace-occurrences(string)
   "Replace occurrences with STRING."
   (interactive "sString: ")
-  (iedit-foreach-occurence-call
+  (iedit-foreach-occurrence-call
    (lambda (beg end string)
      (save-excursion
        (delete-region beg end)
@@ -663,7 +668,7 @@ the buffer."
 (defun iedit-clear-occurrences()
   "Replace occurrences with blank spaces."
   (interactive)
-  (iedit-foreach-occurence-call
+  (iedit-foreach-occurrence-call
    (lambda (beg end)
      (save-excursion
        (delete-region beg end)
@@ -673,7 +678,7 @@ the buffer."
 (defun iedit-delete-occurrences()
   "Delete occurrences."
   (interactive)
-  (iedit-foreach-occurence-call 'delete-region))
+  (iedit-foreach-occurrence-call 'delete-region))
 
 (provide 'iedit)
 
