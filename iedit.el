@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-01-29 00:15:42 Victor Ren>
+;; Time-stamp: <2012-01-29 22:32:06 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.92
@@ -218,7 +218,7 @@ This is like `describe-bindings', but displays only Iedit keys."
     (with-help-window "*Help*"
       (with-current-buffer standard-output
         (princ "Iedit Mode Bindings:\n")
-        (princ (substitute-command-keys "\\{iedit-mode-map}"))))))
+        (princ (substitute-command-keys "\\{iedit-occurrence-local-map}"))))))
 
 (defun iedit-describe-key ()
   "Display documentation of the function invoked by iedit key."
@@ -246,6 +246,17 @@ This is like `describe-bindings', but displays only Iedit keys."
     (define-key map [f1] iedit-help-map)
     map)
   "Keymap used while iedit mode is enabled.")
+
+(defvar iedit-occurrence-local-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map iedit-mode-map)
+    (define-key map (kbd "M-u") 'iedit-upcase-occurrences)
+    (define-key map (kbd "M-l") 'iedit-downcase-occurrences)
+    (define-key map (kbd "M-r") 'iedit-replace-occurrences)
+    (define-key map (kbd "M-c") 'iedit-clear-occurrences)
+    (define-key map (kbd "M-d") 'iedit-delete-occurrences)
+    map)
+  "Keymap used within overlays.")
 
 (or (assq 'iedit-mode minor-mode-map-alist)
     (setq minor-mode-map-alist
@@ -283,7 +294,7 @@ With a universal prefix argument and region active, interactively
 edit region as a string rectangle.
 
 Commands:
-\\{iedit-mode-map}"
+\\{iedit-occurrence-local-map}"
   (interactive "*P")
   (if iedit-mode
       (iedit-done)
@@ -437,6 +448,7 @@ occurrences if the user starts typing."
   (let ((occurrence (make-overlay begin end (current-buffer) nil t)))
     (overlay-put occurrence iedit-occurrence-overlay-name t)
     (overlay-put occurrence 'face iedit-occurrence-face)
+    (overlay-put occurrence 'local-map iedit-occurrence-local-map)
     (overlay-put occurrence 'insert-in-front-hooks '(iedit-occurrence-update))
     (overlay-put occurrence 'insert-behind-hooks '(iedit-occurrence-update))
     (overlay-put occurrence 'modification-hooks '(iedit-occurrence-update))
@@ -614,6 +626,54 @@ the buffer."
   (if iedit-unmatched-lines-invisible
       (iedit-hide-unmatched-lines)
     (remove-overlays (point-min) (point-max) iedit-invisible-overlay-name t)))
+
+(defun iedit-foreach-occurence-call (function &optional string)
+  "Call function for each occurrence."
+  (let* ((ov (car iedit-occurrences-overlays))
+         (beg (overlay-start ov))
+         (end (overlay-end ov)))
+    (when (/= beg end)
+      (let ((inhibit-modification-hooks t))
+        (dolist (occurrence  iedit-occurrences-overlays)
+          (if string
+              (funcall function (overlay-start occurrence) (overlay-end occurrence) string)
+          (funcall function (overlay-start occurrence) (overlay-end occurrence))))))))
+
+(defun iedit-upcase-occurrences ()
+  "Covert occurrences to upper case."
+  (interactive)
+  (iedit-foreach-occurence-call 'upcase-region))
+
+(defun iedit-downcase-occurrences()
+  "Covert occurrences to lower case."
+  (interactive)
+  (iedit-foreach-occurence-call 'downcase-region))
+
+(defun iedit-replace-occurrences(string)
+  "Replace occurrences with STRING."
+  (interactive "sString: ")
+  (iedit-foreach-occurence-call
+   (lambda (beg end string)
+     (save-excursion
+       (delete-region beg end)
+       (goto-char beg)
+       (insert string)))
+   string))
+
+(defun iedit-clear-occurrences()
+  "Replace occurrences with blank spaces."
+  (interactive)
+  (iedit-foreach-occurence-call
+   (lambda (beg end)
+     (save-excursion
+       (delete-region beg end)
+       (goto-char beg)
+       (insert-char 32  (- end beg))))))
+
+(defun iedit-delete-occurrences()
+  "Delete occurrences."
+  (interactive)
+  (iedit-foreach-occurence-call 'delete-region))
 
 (provide 'iedit)
 
