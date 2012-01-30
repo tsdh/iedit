@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-01-30 13:33:21 Victor Ren>
+;; Time-stamp: <2012-01-30 21:44:34 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.92
@@ -130,7 +130,7 @@ indicate the position of each occurrence.  In addition, the
 occurrence overlay is used to provide a different face
 configurable via `iedit-occurrence-face'.")
 
-(defvar iedit-case-sensitive nil
+(defvar iedit-case-sensitive iedit-case-sensitive-default
   "This is buffer local variable. If no-nil, matching is case
   sensitive.")
 
@@ -264,7 +264,8 @@ This is like `describe-bindings', but displays only Iedit keys."
     (define-key map (kbd "M-u") 'iedit-upcase-occurrences)
     (define-key map (kbd "M-l") 'iedit-downcase-occurrences)
     (define-key map (kbd "M-r") 'iedit-replace-occurrences)
-    (define-key map (kbd "M-c") 'iedit-clear-occurrences)
+    (define-key map (kbd "M-C") 'iedit-clear-occurrences)
+    (define-key map (kbd "M-c") 'iedit-toggle-case-sensitive)
     (define-key map (kbd "M-D") 'iedit-delete-occurrences)
     (define-key map [C-return] 'iedit-toggle-buffering)
     (define-key map (kbd "C-?") 'iedit-help-for-occurrences)
@@ -344,13 +345,13 @@ Commands:
             (deactivate-mark)
             (iedit-rectangle beg end))
         (deactivate-mark)
+        (setq iedit-case-sensitive iedit-case-sensitive-default)
         (iedit-start occurrence)))))
 
 (defun iedit-start (occurrence-exp)
   "Start an iedit for the occurrence-exp in the current buffer."
   (setq iedit-occurrences-overlays nil)
   (setq iedit-unmatched-lines-invisible iedit-unmatched-lines-invisible-default)
-  (setq iedit-case-sensitive iedit-case-sensitive-default)
   (setq iedit-aborting nil)
   ;; Find and record each occurrence's markers and add the overlay to the occurrences
   (let ((counter 0)
@@ -380,13 +381,6 @@ Commands:
   ;; (add-hook 'mouse-leave-buffer-hook 'iedit-done)
   (add-hook 'kbd-macro-termination-hook 'iedit-done))
 
-(defun iedit-reset-aborting ()
-  "Turning iedit-mode off and reset iedit-aborting. `iedit-done'
-is postponed after the command is executed for avoiding
-iedit-occurrence-update is called for a removed overlay."
-  (iedit-done)
-  (remove-hook 'post-command-hook 'iedit-reset-aborting t)
-  (setq iedit-aborting nil))
 
 (defun iedit-rectangle (beg end)
   "Start an iedit for the region as a rectangle"
@@ -413,24 +407,6 @@ iedit-occurrence-update is called for a removed overlay."
                  (forward-line 1))
             until (> (point) end))
       (setq iedit-occurrences-overlays (nreverse iedit-occurrences-overlays)))))
-
-(defun iedit-hide-unmatched-lines ()
-  "Hide unmatched lines using invisible overlay."
-  (let ((prev-occurrence-end 0)
-        (unmatched-lines nil))
-    (save-excursion
-      (dolist (overlay iedit-occurrences-overlays)
-        (goto-char (overlay-start overlay))
-        (let ((line-beginning (line-beginning-position)))
-          (if (> line-beginning (1+ prev-occurrence-end))
-              (push  (list (1+ prev-occurrence-end) (1- line-beginning)) unmatched-lines)))
-        (goto-char (overlay-end overlay))
-        (setq prev-occurrence-end (line-end-position)))
-      (if (< prev-occurrence-end (point-max))
-          (push (list (1+ prev-occurrence-end) (point-max)) unmatched-lines))
-      (when unmatched-lines
-        (dolist (unmatch unmatched-lines)
-          (iedit-make-unmatched-lines-overlay (car unmatch) (cadr unmatch)))))))
 
 (defun iedit-done ()
   "Exit iedit mode."
@@ -481,6 +457,14 @@ occurrences if the user starts typing."
     (overlay-put unmatched-lines-overlay 'invisible t)
     (overlay-put unmatched-lines-overlay 'intangible t)
     unmatched-lines-overlay))
+
+(defun iedit-reset-aborting ()
+  "Turning iedit-mode off and reset iedit-aborting. `iedit-done'
+is postponed after the command is executed for avoiding
+iedit-occurrence-update is called for a removed overlay."
+  (iedit-done)
+  (remove-hook 'post-command-hook 'iedit-reset-aborting t)
+  (setq iedit-aborting nil))
 
 (defun iedit-occurrence-update (occurrence after beg end &optional change)
   "Update all occurrences.
@@ -641,6 +625,25 @@ the buffer."
       (iedit-hide-unmatched-lines)
     (remove-overlays (point-min) (point-max) iedit-invisible-overlay-name t)))
 
+(defun iedit-hide-unmatched-lines ()
+  "Hide unmatched lines using invisible overlay."
+  (let ((prev-occurrence-end 0)
+        (unmatched-lines nil))
+    (save-excursion
+      (dolist (overlay iedit-occurrences-overlays)
+        (goto-char (overlay-start overlay))
+        (let ((line-beginning (line-beginning-position)))
+          (if (> line-beginning (1+ prev-occurrence-end))
+              (push  (list (1+ prev-occurrence-end) (1- line-beginning)) unmatched-lines)))
+        (goto-char (overlay-end overlay))
+        (setq prev-occurrence-end (line-end-position)))
+      (if (< prev-occurrence-end (point-max))
+          (push (list (1+ prev-occurrence-end) (point-max)) unmatched-lines))
+      (when unmatched-lines
+        (dolist (unmatch unmatched-lines)
+          (iedit-make-unmatched-lines-overlay (car unmatch) (cadr unmatch)))))))
+
+;;;; functions for overlay local-map
 (defun iedit-foreach-occurrence-call (function &optional string)
   "Call function for each occurrence."
   (let* ((ov (car iedit-occurrences-overlays))
@@ -755,6 +758,13 @@ since this function is supposed to be called in overlay local-map."
             (setq found overlay)
           (setq overlays (cdr overlays)))))
     found))
+
+(defun iedit-toggle-case-sensitive ()
+  "Toggle case-sensitive matching occurrences."
+  (interactive)
+  (iedit-done)
+  (setq iedit-case-sensitive (not iedit-case-sensitive))
+  (iedit-start iedit-last-occurrence-in-history))
 
 (provide 'iedit)
 
