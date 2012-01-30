@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-01-30 12:48:14 Victor Ren>
+;; Time-stamp: <2012-01-30 13:33:21 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.92
@@ -122,7 +122,7 @@ default."
 
 (or (assq 'iedit-mode minor-mode-alist)
     (nconc minor-mode-alist
-       (list '(iedit-mode iedit-mode))))
+           (list '(iedit-mode iedit-mode))))
 
 (defvar iedit-occurrences-overlays nil
   "The occurrences slot contains a list of overlays used to
@@ -176,6 +176,7 @@ occurrence is not applied to other occurrences when it is true.")
 (make-variable-buffer-local 'iedit-forward-success)
 (make-variable-buffer-local 'iedit-before-modification-string)
 (make-variable-buffer-local 'iedit-before-modification-undo-list)
+(make-variable-buffer-local 'iedit-skipped-modification-once)
 (make-variable-buffer-local 'iedit-aborting)
 (make-variable-buffer-local 'iedit-buffering)
 
@@ -198,9 +199,10 @@ occurrence is not applied to other occurrences when it is true.")
     map)
   "Keymap for characters following the Help key for iedit mode.")
 
-(make-help-screen iedit-help-for-help-internal
-  (purecopy "Type a help option: [bkm] or ?")
-  "You have typed %THIS-KEY%, the help character.  Type a Help option:
+(make-help-screen
+ iedit-help-for-help-internal
+ (purecopy "Type a help option: [bkm] or ?")
+ "You have typed %THIS-KEY%, the help character.  Type a Help option:
 \(Type \\<help-map>\\[help-quit] to exit the Help command.)
 
 b           Display all Iedit key bindings.
@@ -210,7 +212,7 @@ m           Display documentation of Iedit mode.
 You can't type here other help keys available in the global help map,
 but outside of this help window when you type them in Iedit mode,
 they exit Iedit mode before displaying global help."
-  iedit-help-map)
+ iedit-help-map)
 
 (defun iedit-help-for-help ()
   "Display Iedit help menu."
@@ -498,16 +500,10 @@ exit iedit mode."
           (setq iedit-before-modification-string
                 (buffer-substring-no-properties beg end)))
       ;; after modification
-
-      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-      ;; Check if we are inserting into zero-width occurrence. ;;
-      ;;                                                       ;;
-      ;; If so, then TWO modification hooks will be called --  ;;
-      ;; "insert-in-front-hooks" and "insert-behind-hooks".    ;;
-      ;;                                                       ;;
-      ;; We need to run just once.                             ;;
-      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       (when (not iedit-buffering)
+        ;; Check if we are inserting into zero-width occurrence.  If so, then
+        ;; TWO modification hooks will be called -- "insert-in-front-hooks" and
+        ;; "insert-behind-hooks".  We need to run just once.
         (if (and (= beg (overlay-start occurrence))
                  (= end (overlay-end occurrence))
                  (= change 0)
@@ -723,25 +719,25 @@ the buffer."
          (offset (- (point) beg))) ;; delete-region move cursor
     (when (not (string= iedit-before-modification-string modified-string))
       (save-excursion
-          ;; Rollback the current modification and buffer-undo-list. This is to
-          ;; avoid the inconsistency if user undoes modifications
-          (delete-region beg end)
-          (goto-char beg)
-          (insert-and-inherit iedit-before-modification-string)
-          (setq buffer-undo-list iedit-before-modification-undo-list)
-          (dolist (occurrence iedit-occurrences-overlays) ; todo:extract as a function
-            (let ((beginning (overlay-start occurrence))
-                  (ending (overlay-end occurrence)))
-              (delete-region beginning ending)
-              (unless (eq beg end) ;; replacement
-                (goto-char beginning)
-                (insert-and-inherit modified-string)))))
+        ;; Rollback the current modification and buffer-undo-list. This is to
+        ;; avoid the inconsistency if user undoes modifications
+        (delete-region beg end)
+        (goto-char beg)
+        (insert-and-inherit iedit-before-modification-string)
+        (setq buffer-undo-list iedit-before-modification-undo-list)
+        (dolist (occurrence iedit-occurrences-overlays) ; todo:extract as a function
+          (let ((beginning (overlay-start occurrence))
+                (ending (overlay-end occurrence)))
+            (delete-region beginning ending)
+            (unless (eq beg end) ;; replacement
+              (goto-char beginning)
+              (insert-and-inherit modified-string)))))
       (goto-char (+ (overlay-start ov) offset))))
   (setq iedit-buffering nil)
   (setq iedit-mode (propertize " Iedit" 'face 'font-lock-warning-face))
   (force-mode-line-update)
   (setq iedit-before-modification-undo-list nil)
-  (message "Iedit-mode stop buffering."))
+  (message "Iedit-mode buffering stopped."))
 
 (defun iedit-find-current-occurrence-overlay ()
   "Always return the current occurrence overlay  at point or point - 1,
