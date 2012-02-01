@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-01-30 21:44:34 Victor Ren>
+;; Time-stamp: <2012-02-01 23:13:47 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.92
@@ -314,7 +314,7 @@ edit region as a string rectangle.
 
 Commands:
 \\{iedit-occurrence-local-map}"
-  (interactive "*P")
+  (interactive "P")
   (if iedit-mode
       (iedit-done)
     (let (occurrence rect-string)
@@ -337,7 +337,7 @@ Commands:
              (setq occurrence (regexp-quote (current-word)))
              (when iedit-only-at-symbol-boundaries
                (setq iedit-current-occurrence-complete-symbol t)
-               (setq occurrence (concat "\\_<" (regexp-quote occurrence) "\\_>"))))
+               (setq occurrence (concat "\\_<" occurrence "\\_>"))))
             (t (error "No candidate of the occurrence, cannot enable iedit mode.")))
       (if rect-string
           (let ((beg (region-beginning))
@@ -384,6 +384,7 @@ Commands:
 
 (defun iedit-rectangle (beg end)
   "Start an iedit for the region as a rectangle"
+  (barf-if-buffer-read-only)
   (setq iedit-mode (propertize " Iedit-RECT" 'face 'font-lock-warning-face))
   (setq iedit-occurrences-overlays nil)
   (force-mode-line-update)
@@ -658,12 +659,12 @@ the buffer."
 
 (defun iedit-upcase-occurrences ()
   "Covert occurrences to upper case."
-  (interactive)
+  (interactive "*")
   (iedit-foreach-occurrence-call 'upcase-region))
 
 (defun iedit-downcase-occurrences()
   "Covert occurrences to lower case."
-  (interactive)
+  (interactive "*")
   (iedit-foreach-occurrence-call 'downcase-region))
 
 (defun iedit-replace-occurrences(string)
@@ -679,7 +680,7 @@ the buffer."
 
 (defun iedit-clear-occurrences()
   "Replace occurrences with blank spaces."
-  (interactive)
+  (interactive "*")
   (iedit-foreach-occurrence-call
    (lambda (beg end)
      (save-excursion
@@ -689,12 +690,12 @@ the buffer."
 
 (defun iedit-delete-occurrences()
   "Delete occurrences."
-  (interactive)
+  (interactive "*")
   (iedit-foreach-occurrence-call 'delete-region))
 
 (defun iedit-toggle-buffering ()
   "Toggle buffering."
-  (interactive)
+  (interactive "*")
   (if iedit-buffering
       (iedit-stop-buffering)
     (iedit-start-buffering)))
@@ -719,7 +720,7 @@ the buffer."
          (beg (overlay-start ov))
          (end (overlay-end ov))
          (modified-string (buffer-substring-no-properties beg end))
-         (offset (- (point) beg))) ;; delete-region move cursor
+         (offset (- (point) beg))) ;; delete-region moves cursor
     (when (not (string= iedit-before-modification-string modified-string))
       (save-excursion
         ;; Rollback the current modification and buffer-undo-list. This is to
