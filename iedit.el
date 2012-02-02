@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-02-02 23:15:14 Victor Ren>
+;; Time-stamp: <2012-02-02 23:32:57 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.92
@@ -653,8 +653,9 @@ the buffer."
          (end (overlay-end ov)))
     (when (/= beg end)
       (let ((inhibit-modification-hooks t))
-        (dolist (occurrence  iedit-occurrences-overlays)
-          (apply function (overlay-start occurrence) (overlay-end occurrence) args))))))
+        (save-excursion
+          (dolist (occurrence  iedit-occurrences-overlays)
+            (apply function (overlay-start occurrence) (overlay-end occurrence) args)))))))
 
 (defun iedit-upcase-occurrences ()
   "Covert occurrences to upper case."
@@ -673,10 +674,9 @@ the buffer."
          (offset (- (point) (overlay-start ov))))
     (iedit-apply-on-occurrences
      (lambda (beg end string)
-       (save-excursion
          (delete-region beg end)
          (goto-char beg)
-         (insert-and-inherit string)))
+         (insert-and-inherit string))
      string)
     (goto-char (+ (overlay-start ov) offset))))
 
@@ -752,7 +752,7 @@ the buffer."
 (defvar iedit-number-line-counter
   "Occurrence number for 'iedit-number-occurrences")
 
-(defun iedit--default-line-number-format (start-at)
+(defun iedit-default-line-number-format (start-at)
   (concat "%"
           (int-to-string
            (length (int-to-string
@@ -771,11 +771,11 @@ with a prefix argument, prompt for START-AT and FORMAT."
        (let* ((start-at (read-number "Number to count from: " 1)))
          (list start-at
                (read-string "Format string: "
-                            (iedit--default-line-number-format
+                            (iedit-default-line-number-format
                              start-at))))
      (list  1 nil)))
   (unless format
-    (setq format (iedit--default-line-number-format start-at)))
+    (setq format (iedit-default-line-number-format start-at)))
   (let ((iedit-number-line-counter start-at))
     (iedit-apply-on-occurrences
      (lambda (beg _end format-string)
