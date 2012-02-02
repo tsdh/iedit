@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-02-02 22:17:45 Victor Ren>
+;; Time-stamp: <2012-02-02 23:15:14 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.92
@@ -267,6 +267,7 @@ This is like `describe-bindings', but displays only Iedit keys."
     (define-key map (kbd "M-C") 'iedit-clear-occurrences)
     (define-key map (kbd "M-c") 'iedit-toggle-case-sensitive)
     (define-key map (kbd "M-D") 'iedit-delete-occurrences)
+    (define-key map (kbd "M-N") 'iedit-number-occurrences)
     (define-key map [C-return] 'iedit-toggle-buffering)
     (define-key map (kbd "C-?") 'iedit-help-for-occurrences)
     map)
@@ -682,12 +683,9 @@ the buffer."
 (defun iedit-clear-occurrences()
   "Replace occurrences with blank spaces."
   (interactive "*")
-  (iedit-apply-on-occurrences
-   (lambda (beg end)
-     (save-excursion
-       (delete-region beg end)
-       (goto-char beg)
-       (insert-char 32  (- end beg))))))
+  (let* ((ov (car iedit-occurrences-overlays))
+         (count (- (overlay-end ov) (overlay-start ov))))
+  (iedit-replace-occurrences (make-string count 32))))
 
 (defun iedit-delete-occurrences()
   "Delete occurrences."
@@ -700,6 +698,13 @@ the buffer."
   (if iedit-buffering
       (iedit-stop-buffering)
     (iedit-start-buffering)))
+
+(defun iedit-toggle-case-sensitive ()
+  "Toggle case-sensitive matching occurrences."
+  (interactive)
+  (iedit-done)
+  (setq iedit-case-sensitive (not iedit-case-sensitive))
+  (iedit-start iedit-last-occurrence-in-history))
 
 (defun iedit-start-buffering ()
   "Start buffering."
@@ -744,6 +749,41 @@ the buffer."
   (setq iedit-before-modification-undo-list nil)
   (message "Iedit-mode buffering stopped."))
 
+(defvar iedit-number-line-counter
+  "Occurrence number for 'iedit-number-occurrences")
+
+(defun iedit--default-line-number-format (start-at)
+  (concat "%"
+          (int-to-string
+           (length (int-to-string
+                    (1- (+ (length iedit-occurrences-overlays) start-at)))))
+	  "d "))
+
+(defun iedit-number-occurrences (start-at &optional format)
+  "Insert numbers in front of the occurrences.
+
+START-AT, if non-nil, should be a number from which to begin
+counting.  FORMAT, if non-nil, should be a format string to pass
+to `format' along with the line count.  When called interactively
+with a prefix argument, prompt for START-AT and FORMAT."
+  (interactive
+   (if current-prefix-arg
+       (let* ((start-at (read-number "Number to count from: " 1)))
+         (list start-at
+               (read-string "Format string: "
+                            (iedit--default-line-number-format
+                             start-at))))
+     (list  1 nil)))
+  (unless format
+    (setq format (iedit--default-line-number-format start-at)))
+  (let ((iedit-number-line-counter start-at))
+    (iedit-apply-on-occurrences
+     (lambda (beg _end format-string)
+       (goto-char beg)
+       (insert (format format-string iedit-number-line-counter))
+       (setq iedit-number-line-counter
+             (1+ iedit-number-line-counter))) format)))
+
 (defun iedit-find-current-occurrence-overlay ()
   "Always return the current occurrence overlay  at point or point - 1,
 since this function is supposed to be called in overlay local-map."
@@ -760,13 +800,6 @@ since this function is supposed to be called in overlay local-map."
             (setq found overlay)
           (setq overlays (cdr overlays)))))
     found))
-
-(defun iedit-toggle-case-sensitive ()
-  "Toggle case-sensitive matching occurrences."
-  (interactive)
-  (iedit-done)
-  (setq iedit-case-sensitive (not iedit-case-sensitive))
-  (iedit-start iedit-last-occurrence-in-history))
 
 (provide 'iedit)
 
