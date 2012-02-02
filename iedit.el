@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-02-01 23:13:47 Victor Ren>
+;; Time-stamp: <2012-02-02 22:17:45 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.92
@@ -69,7 +69,7 @@
 ;; words, not inside words
 
 ;; Le  Wang <l26wang@gmail.com>  proposed to  match only  complete symbols,  not
-;; inside symbols, contributed iedit-rect mode
+;; inside symbols, contributed rectangle support
 
 ;;; Code:
 
@@ -645,7 +645,7 @@ the buffer."
           (iedit-make-unmatched-lines-overlay (car unmatch) (cadr unmatch)))))))
 
 ;;;; functions for overlay local-map
-(defun iedit-foreach-occurrence-call (function &optional string)
+(defun iedit-apply-on-occurrences (function &rest args)
   "Call function for each occurrence."
   (let* ((ov (car iedit-occurrences-overlays))
          (beg (overlay-start ov))
@@ -653,35 +653,36 @@ the buffer."
     (when (/= beg end)
       (let ((inhibit-modification-hooks t))
         (dolist (occurrence  iedit-occurrences-overlays)
-          (if string
-              (funcall function (overlay-start occurrence) (overlay-end occurrence) string)
-            (funcall function (overlay-start occurrence) (overlay-end occurrence))))))))
+          (apply function (overlay-start occurrence) (overlay-end occurrence) args))))))
 
 (defun iedit-upcase-occurrences ()
   "Covert occurrences to upper case."
   (interactive "*")
-  (iedit-foreach-occurrence-call 'upcase-region))
+  (iedit-apply-on-occurrences 'upcase-region))
 
 (defun iedit-downcase-occurrences()
   "Covert occurrences to lower case."
   (interactive "*")
-  (iedit-foreach-occurrence-call 'downcase-region))
+  (iedit-apply-on-occurrences 'downcase-region))
 
 (defun iedit-replace-occurrences(string)
   "Replace occurrences with STRING."
-  (interactive "sString: ")
-  (iedit-foreach-occurrence-call
-   (lambda (beg end string)
-     (save-excursion
-       (delete-region beg end)
-       (goto-char beg)
-       (insert-and-inherit string)))
-   string))
+  (interactive "*sString: ")
+  (let* ((ov (iedit-find-current-occurrence-overlay))
+         (offset (- (point) (overlay-start ov))))
+    (iedit-apply-on-occurrences
+     (lambda (beg end string)
+       (save-excursion
+         (delete-region beg end)
+         (goto-char beg)
+         (insert-and-inherit string)))
+     string)
+    (goto-char (+ (overlay-start ov) offset))))
 
 (defun iedit-clear-occurrences()
   "Replace occurrences with blank spaces."
   (interactive "*")
-  (iedit-foreach-occurrence-call
+  (iedit-apply-on-occurrences
    (lambda (beg end)
      (save-excursion
        (delete-region beg end)
@@ -691,7 +692,7 @@ the buffer."
 (defun iedit-delete-occurrences()
   "Delete occurrences."
   (interactive "*")
-  (iedit-foreach-occurrence-call 'delete-region))
+  (iedit-apply-on-occurrences 'delete-region))
 
 (defun iedit-toggle-buffering ()
   "Toggle buffering."
