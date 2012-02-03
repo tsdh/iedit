@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-02-02 23:32:57 Victor Ren>
+;; Time-stamp: <2012-02-03 23:52:19 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.92
@@ -74,6 +74,7 @@
 ;;; Code:
 
 (eval-when-compile (require 'cl))
+(require 'rect) ;; kill rectangle
 
 (defgroup iedit nil
   "Edit multiple regions with the same content simultaneously."
@@ -169,6 +170,15 @@ forward or backward successful")
 buffering, which means the modification to the current
 occurrence is not applied to other occurrences when it is true.")
 
+(defvar iedit-rectangle nil
+ "This buffer local variable which indicates the current mode is
+ iedit-rect or not." )
+
+(defvar iedit-rect-start "The top-left corner of rectangle.")
+(defvar iedit-rect-end "The bottom-right corner of rectangle.")
+
+(defvar iedit-current-keymap)
+
 (make-variable-buffer-local 'iedit-occurrences-overlays)
 (make-variable-buffer-local 'iedit-unmatched-lines-invisible)
 (make-variable-buffer-local 'iedit-case-sensitive)
@@ -179,6 +189,10 @@ occurrence is not applied to other occurrences when it is true.")
 (make-variable-buffer-local 'iedit-skipped-modification-once)
 (make-variable-buffer-local 'iedit-aborting)
 (make-variable-buffer-local 'iedit-buffering)
+(make-variable-buffer-local 'iedit-rectangle)
+(make-variable-buffer-local 'iedit-rect-start)
+(make-variable-buffer-local 'iedit-rect-end)
+(make-variable-buffer-local 'iedit-current-keymap)
 
 (defconst iedit-occurrence-overlay-name 'iedit-occurrence-overlay-name)
 (defconst iedit-invisible-overlay-name 'iedit-invisible-overlay-name)
@@ -227,9 +241,8 @@ This is like `describe-bindings', but displays only Iedit keys."
   (let (same-window-buffer-names same-window-regexps)
     (with-help-window "*Help*"
       (with-current-buffer standard-output
-        (princ "Iedit Mode Bindings:
-")
-        (princ (substitute-command-keys "\\{iedit-occurrence-local-map}"))))))
+        (princ "Iedit Mode Bindings: ")
+        (princ (substitute-command-keys "\\{iedit-current-keymap}"))))))
 
 (defun iedit-describe-key ()
   "Display documentation of the function invoked by iedit key."
@@ -271,12 +284,28 @@ This is like `describe-bindings', but displays only Iedit keys."
     (define-key map [C-return] 'iedit-toggle-buffering)
     (define-key map (kbd "C-?") 'iedit-help-for-occurrences)
     map)
-  "Keymap used within overlays.")
+  "Keymap used within overlays in iedit mode.")
+
+(defvar iedit-rect-local-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map iedit-occurrence-local-map)
+    (define-key map (kbd "M-k") 'iedit-kill-rectangle)
+    map)
+  "Keymap used within overlays in iedit-RECT mode.")
+
+(defun iedit-kill-rectangle(&optional fill)
+  "Kill the rectangle.
+The behavior is the same as `kill-rectangle' in rect mode."
+  (interactive "P")
+  (let ((inhibit-modification-hooks t))
+    (kill-rectangle iedit-rect-start iedit-rect-end fill)))
 
 (defun iedit-help-for-occurrences ()
-  "Display iedit-occurrence-local-map."
+  "Display `iedit-occurrence-local-map' or `iedit-rect-local-map'."
   (interactive)
-  (message "M-u/l:up/downcase M-r:replace M-c:clear M-D:delete C-return:buffering C-?:help"))
+  (message (concat "M-u/l:up/downcase M-r:replace M-C:clear M-D:delete M-n:number C-return:buffering"
+                   (if iedit-rectangle
+                       " M-k:kill"))))
 
 (or (assq 'iedit-mode minor-mode-map-alist)
     (setq minor-mode-map-alist
@@ -314,7 +343,7 @@ With a universal prefix argument and region active, interactively
 edit region as a string rectangle.
 
 Commands:
-\\{iedit-occurrence-local-map}"
+\\{iedit-current-keymap}"
   (interactive "P")
   (if iedit-mode
       (iedit-done)
@@ -344,7 +373,7 @@ Commands:
           (let ((beg (region-beginning))
                 (end (region-end)))
             (deactivate-mark)
-            (iedit-rectangle beg end))
+            (iedit-rectangle-start beg end))
         (deactivate-mark)
         (setq iedit-case-sensitive iedit-case-sensitive-default)
         (iedit-start occurrence)))))
@@ -354,6 +383,8 @@ Commands:
   (setq iedit-occurrences-overlays nil)
   (setq iedit-unmatched-lines-invisible iedit-unmatched-lines-invisible-default)
   (setq iedit-aborting nil)
+  (setq iedit-rectangle nil)
+  (setq iedit-current-keymap iedit-occurrence-local-map)
   ;; Find and record each occurrence's markers and add the overlay to the occurrences
   (let ((counter 0)
         (case-fold-search (not iedit-case-sensitive)))
@@ -375,19 +406,23 @@ Commands:
                counter
                (if (> (length occurrence-exp) 50)
                    (concat (substring occurrence-exp 0 50) "...")
-                 occurrence-exp))))
-  (setq iedit-mode (propertize " Iedit" 'face 'font-lock-warning-face))
+                 occurrence-exp))
+      (setq iedit-mode (propertize (concat " Iedit:" (number-to-string counter))
+                                   'face 'font-lock-warning-face))))
   (force-mode-line-update)
   (run-hooks 'iedit-mode-hook)
   ;; (add-hook 'mouse-leave-buffer-hook 'iedit-done)
   (add-hook 'kbd-macro-termination-hook 'iedit-done))
 
-
-(defun iedit-rectangle (beg end)
+(defun iedit-rectangle-start (beg end)
   "Start an iedit for the region as a rectangle"
   (barf-if-buffer-read-only)
   (setq iedit-mode (propertize " Iedit-RECT" 'face 'font-lock-warning-face))
   (setq iedit-occurrences-overlays nil)
+  (setq iedit-rectangle t)
+  (setq iedit-current-keymap iedit-rect-local-map)
+  (setq iedit-rect-start beg)
+  (setq iedit-rect-end end)
   (force-mode-line-update)
   (run-hooks 'iedit-mode-hook)
   (add-hook 'kbd-macro-termination-hook 'iedit-done)
@@ -446,7 +481,7 @@ occurrences if the user starts typing."
   (let ((occurrence (make-overlay begin end (current-buffer) nil t)))
     (overlay-put occurrence iedit-occurrence-overlay-name t)
     (overlay-put occurrence 'face iedit-occurrence-face)
-    (overlay-put occurrence 'local-map iedit-occurrence-local-map)
+    (overlay-put occurrence 'local-map iedit-current-keymap)
     (overlay-put occurrence 'insert-in-front-hooks '(iedit-occurrence-update))
     (overlay-put occurrence 'insert-behind-hooks '(iedit-occurrence-update))
     (overlay-put occurrence 'modification-hooks '(iedit-occurrence-update))
@@ -669,7 +704,7 @@ the buffer."
 
 (defun iedit-replace-occurrences(string)
   "Replace occurrences with STRING."
-  (interactive "*sString: ")
+  (interactive "*sReplace with: ")
   (let* ((ov (iedit-find-current-occurrence-overlay))
          (offset (- (point) (overlay-start ov))))
     (iedit-apply-on-occurrences
@@ -692,19 +727,25 @@ the buffer."
   (interactive "*")
   (iedit-apply-on-occurrences 'delete-region))
 
-(defun iedit-toggle-buffering ()
-  "Toggle buffering."
-  (interactive "*")
-  (if iedit-buffering
-      (iedit-stop-buffering)
-    (iedit-start-buffering)))
-
 (defun iedit-toggle-case-sensitive ()
   "Toggle case-sensitive matching occurrences."
   (interactive)
   (iedit-done)
   (setq iedit-case-sensitive (not iedit-case-sensitive))
   (iedit-start iedit-last-occurrence-in-history))
+
+(defun iedit-toggle-buffering ()
+  "Toggle buffering.
+
+This is intended to improve iedit's response time. If the number
+of occurrences are huge, iedit might be slow to update all the
+occurrences for each key stoke.  When buffering is on,
+modification is only applied to the current occurrence and will
+be applied to other occurrences when buffering is off."
+  (interactive "*")
+  (if iedit-buffering
+      (iedit-stop-buffering)
+    (iedit-start-buffering)))
 
 (defun iedit-start-buffering ()
   "Start buffering."
@@ -744,12 +785,13 @@ the buffer."
               (insert-and-inherit modified-string)))))
       (goto-char (+ (overlay-start ov) offset))))
   (setq iedit-buffering nil)
-  (setq iedit-mode (propertize " Iedit" 'face 'font-lock-warning-face))
+  (setq iedit-mode (propertize (concat " Iedit:" (number-to-string (length iedit-occurrences-overlays)))
+                               'face 'font-lock-warning-face))
   (force-mode-line-update)
   (setq iedit-before-modification-undo-list nil)
   (message "Iedit-mode buffering stopped."))
 
-(defvar iedit-number-line-counter
+(defvar iedit-number-line-counter 1
   "Occurrence number for 'iedit-number-occurrences")
 
 (defun iedit-default-line-number-format (start-at)
