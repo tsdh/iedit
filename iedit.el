@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-02-05 22:16:47 Victor Ren>
+;; Time-stamp: <2012-02-05 23:59:16 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.93
@@ -375,11 +375,18 @@ Commands:
 
 (defun iedit-start (occurrence-exp)
   "Start an iedit for the occurrence-exp in the current buffer."
-  (setq iedit-occurrences-overlays nil)
   (setq iedit-unmatched-lines-invisible iedit-unmatched-lines-invisible-default)
   (setq iedit-aborting nil)
   (setq iedit-rectangle nil)
   (setq iedit-current-keymap iedit-occurrence-local-map)
+  (iedit-refresh occurrence-exp)
+  (run-hooks 'iedit-mode-hook)
+  ;; (add-hook 'mouse-leave-buffer-hook 'iedit-done)
+  (add-hook 'kbd-macro-termination-hook 'iedit-done))
+
+(defun iedit-refresh (occurrence-exp)
+  "Refresh iedit-mode."
+  (setq iedit-occurrences-overlays nil)
   (when iedit-occurrence-is-complete-symbol
     (setq occurrence-exp (concat "\\_<" occurrence-exp "\\_>")))
   ;; Find and record each occurrence's markers and add the overlay to the occurrences
@@ -392,24 +399,20 @@ Commands:
               iedit-occurrences-overlays)
         (setq counter (1+ counter)))
       (if (= 0 counter)
-          (error "0 matches for \"%s\""
-                 (if (> (length occurrence-exp) 50)
-                     (concat (substring occurrence-exp 0 50) "...")
-                   occurrence-exp))
+          (error "0 matches for \"%s\"" (iedit-printable occurrence-exp))
         (setq iedit-occurrences-overlays (nreverse iedit-occurrences-overlays))
         (if iedit-unmatched-lines-invisible
             (iedit-hide-unmatched-lines)))
-      (message "%d matches for \"%s\""
-               counter
-               (if (> (length occurrence-exp) 50)
-                   (concat (substring occurrence-exp 0 50) "...")
-                 occurrence-exp))
+      (message "%d matches for \"%s\"" counter (iedit-printable occurrence-exp))
       (setq iedit-mode (propertize (concat " Iedit:" (number-to-string counter))
                                    'face 'font-lock-warning-face))))
-  (force-mode-line-update)
-  (run-hooks 'iedit-mode-hook)
-  ;; (add-hook 'mouse-leave-buffer-hook 'iedit-done)
-  (add-hook 'kbd-macro-termination-hook 'iedit-done))
+  (force-mode-line-update))
+
+(defun iedit-printable (string)
+  "Return a omitted substring that is not longer than 50."
+  (if (> (length string) 50)
+      (concat (substring string 0 50) "...")
+    string))
 
 (defun iedit-rectangle-start (beg end)
   "Start an iedit for the region as a rectangle"
@@ -446,14 +449,7 @@ Commands:
   "Exit iedit mode."
   (if iedit-buffering
       (iedit-stop-buffering))
-  (let* ((ov (car iedit-occurrences-overlays))
-         (beg (overlay-start ov))
-         (end (overlay-end ov)))
-    (setq iedit-last-occurrence-in-history
-          (if (and ov (/=  beg end))
-              (regexp-quote (buffer-substring-no-properties beg end))
-            nil)
-          ))
+  (setq iedit-last-occurrence-in-history (iedit-current-occurrence-string))
   (remove-overlays (point-min) (point-max) iedit-occurrence-overlay-name t)
   (remove-overlays (point-min) (point-max) iedit-invisible-overlay-name t)
   (setq iedit-occurrences-overlays nil)
@@ -461,9 +457,9 @@ Commands:
   (setq iedit-before-modification-string "")
   (setq iedit-before-modification-undo-list nil)
   ;; (remove-hook 'mouse-leave-buffer-hook 'iedit-done)
-  (remove-hook 'kbd-macro-termination-hook 'iedit-done)
   (setq iedit-mode nil)
   (force-mode-line-update)
+  (remove-hook 'kbd-macro-termination-hook 'iedit-done)
   (run-hooks 'iedit-mode-end-hook))
 
 (defun iedit-make-occurrence-overlay (begin end)
@@ -725,9 +721,23 @@ the buffer."
 (defun iedit-toggle-case-sensitive ()
   "Toggle case-sensitive matching occurrences."
   (interactive)
-  (iedit-done)
+  (if iedit-buffering
+      (iedit-stop-buffering))
+  (setq iedit-last-occurrence-in-history (iedit-current-occurrence-string))
+  (remove-overlays (point-min) (point-max) iedit-occurrence-overlay-name t)
+  (remove-overlays (point-min) (point-max) iedit-invisible-overlay-name t)
+  (setq iedit-occurrences-overlays nil)
   (setq iedit-case-sensitive (not iedit-case-sensitive))
-  (iedit-start iedit-last-occurrence-in-history))
+  (if iedit-last-occurrence-in-history
+      (iedit-refresh iedit-last-occurrence-in-history)))
+(defun iedit-current-occurrence-string ()
+  ""
+  (let* ((ov (car iedit-occurrences-overlays))
+         (beg (overlay-start ov))
+         (end (overlay-end ov)))
+    (if (and ov (/=  beg end))
+        (regexp-quote (buffer-substring-no-properties beg end))
+      nil)))
 
 (defun iedit-toggle-buffering ()
   "Toggle buffering.
@@ -745,15 +755,11 @@ be applied to other occurrences when buffering is off."
 (defun iedit-start-buffering ()
   "Start buffering."
   (setq iedit-buffering t)
-  (let* ((ov (iedit-find-current-occurrence-overlay))
-         (beg (overlay-start ov))
-         (end (overlay-end ov)))
-    (setq iedit-before-modification-string
-          (buffer-substring-no-properties beg end))
-    (setq iedit-before-modification-undo-list buffer-undo-list)
-    (setq iedit-mode (propertize " Iedit-B" 'face 'font-lock-warning-face))
-    (force-mode-line-update)
-    (message "Iedit-mode buffering.")))
+  (setq iedit-before-modification-string (iedit-current-occurrence-string))
+  (setq iedit-before-modification-undo-list buffer-undo-list)
+  (setq iedit-mode (propertize " Iedit-B" 'face 'font-lock-warning-face))
+  (force-mode-line-update)
+  (message "Iedit-mode buffering."))
 
 (defun iedit-stop-buffering ()
   "Stop buffering and apply the modification to other occurrences."
