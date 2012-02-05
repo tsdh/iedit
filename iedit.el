@@ -1,11 +1,11 @@
-;;; iedit.el --- Edit multiple regions with the same content simultaneously.
+;;; iedit.el --- Edit multiple regions simultaneously.
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-02-03 23:52:19 Victor Ren>
+;; Time-stamp: <2012-02-05 22:16:47 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
-;; Version: 0.92
+;; Version: 0.93
 ;; X-URL: http://www.emacswiki.org/emacs/iedit.el
 ;; Compatibility: GNU Emacs: 22.x, 23.x, 24.x
 
@@ -61,6 +61,7 @@
 ;; - C-n,C-p is slow when unmatched lines are hided.
 ;; - toggle blank line between matched lines?
 ;; - ert unit test
+;; - update documents for rectangle support
 
 ;;; Contributors
 ;; Adam Lindberg <eproxus@gmail.com> added a case sensitivity option that can be toggled.
@@ -68,7 +69,7 @@
 ;; Tassilo Horn <tassilo@member.fsf.org> added an option to match only complete
 ;; words, not inside words
 
-;; Le  Wang <l26wang@gmail.com>  proposed to  match only  complete symbols,  not
+;; Le Wang <l26wang@gmail.com> proposed to match only complete symbols,  not
 ;; inside symbols, contributed rectangle support
 
 ;;; Code:
@@ -143,7 +144,7 @@ unmatched lines are hided.")
   "This is buffer local variable which is the occurrence when
 iedit mode is turned off last time.")
 
-(defvar iedit-current-occurrence-complete-symbol nil
+(defvar iedit-occurrence-is-complete-symbol nil
   "This is buffer local variable which indicates the occurrence
 only matches complete symbol.")
 
@@ -293,13 +294,6 @@ This is like `describe-bindings', but displays only Iedit keys."
     map)
   "Keymap used within overlays in iedit-RECT mode.")
 
-(defun iedit-kill-rectangle(&optional fill)
-  "Kill the rectangle.
-The behavior is the same as `kill-rectangle' in rect mode."
-  (interactive "P")
-  (let ((inhibit-modification-hooks t))
-    (kill-rectangle iedit-rect-start iedit-rect-end fill)))
-
 (defun iedit-help-for-occurrences ()
   "Display `iedit-occurrence-local-map' or `iedit-rect-local-map'."
   (interactive)
@@ -347,12 +341,13 @@ Commands:
   (interactive "P")
   (if iedit-mode
       (iedit-done)
-    (let (occurrence rect-string)
+    (let (occurrence complete-symbol rect-string)
       (cond ((and arg
                   (or (not transient-mark-mode) (not mark-active)
                       (equal (mark) (point)))
                   iedit-last-occurrence-in-history)
-             (setq occurrence iedit-last-occurrence-in-history))
+             (setq occurrence iedit-last-occurrence-in-history)
+             (setq complete-symbol iedit-occurrence-is-complete-symbol))
             ((and arg
                   transient-mark-mode mark-active (not (equal (mark) (point))))
              (setq rect-string t))
@@ -366,9 +361,9 @@ Commands:
             ((and iedit-current-symbol-default (current-word t))
              (setq occurrence (regexp-quote (current-word)))
              (when iedit-only-at-symbol-boundaries
-               (setq iedit-current-occurrence-complete-symbol t)
-               (setq occurrence (concat "\\_<" occurrence "\\_>"))))
+               (setq complete-symbol t)))
             (t (error "No candidate of the occurrence, cannot enable iedit mode.")))
+      (setq iedit-occurrence-is-complete-symbol complete-symbol)
       (if rect-string
           (let ((beg (region-beginning))
                 (end (region-end)))
@@ -385,6 +380,8 @@ Commands:
   (setq iedit-aborting nil)
   (setq iedit-rectangle nil)
   (setq iedit-current-keymap iedit-occurrence-local-map)
+  (when iedit-occurrence-is-complete-symbol
+    (setq occurrence-exp (concat "\\_<" occurrence-exp "\\_>")))
   ;; Find and record each occurrence's markers and add the overlay to the occurrences
   (let ((counter 0)
         (case-fold-search (not iedit-case-sensitive)))
@@ -454,13 +451,9 @@ Commands:
          (end (overlay-end ov)))
     (setq iedit-last-occurrence-in-history
           (if (and ov (/=  beg end))
-              (let ((substring (buffer-substring-no-properties beg end)))
-                (if iedit-current-occurrence-complete-symbol
-                    (concat "\\_<" substring "\\_>")
-                  substring))
+              (regexp-quote (buffer-substring-no-properties beg end))
             nil)
           ))
-  (setq iedit-current-occurrence-complete-symbol nil)
   (remove-overlays (point-min) (point-max) iedit-occurrence-overlay-name t)
   (remove-overlays (point-min) (point-max) iedit-invisible-overlay-name t)
   (setq iedit-occurrences-overlays nil)
@@ -619,7 +612,9 @@ beginning of the buffer."
         (progn
           (if (get-char-property (point-min) 'iedit-occurrence-overlay-name)
               (setq pos (point-min))
-            (setq pos (next-single-char-property-change (point-min) 'iedit-occurrence-overlay-name)))
+            (setq pos (next-single-char-property-change
+                       (point-min)
+                       'iedit-occurrence-overlay-name)))
           (setq iedit-forward-success t)
           (message "Located the first occurrence."))))
     (when iedit-forward-success
@@ -785,8 +780,9 @@ be applied to other occurrences when buffering is off."
               (insert-and-inherit modified-string)))))
       (goto-char (+ (overlay-start ov) offset))))
   (setq iedit-buffering nil)
-  (setq iedit-mode (propertize (concat " Iedit:" (number-to-string (length iedit-occurrences-overlays)))
-                               'face 'font-lock-warning-face))
+  (setq iedit-mode (propertize
+                    (concat " Iedit:" (number-to-string (length iedit-occurrences-overlays)))
+                    'face 'font-lock-warning-face))
   (force-mode-line-update)
   (setq iedit-before-modification-undo-list nil)
   (message "Iedit-mode buffering stopped."))
@@ -825,6 +821,13 @@ with a prefix argument, prompt for START-AT and FORMAT."
        (insert (format format-string iedit-number-line-counter))
        (setq iedit-number-line-counter
              (1+ iedit-number-line-counter))) format)))
+
+(defun iedit-kill-rectangle(&optional fill)
+  "Kill the rectangle.
+The behavior is the same as `kill-rectangle' in rect mode."
+  (interactive "*P")
+  (let ((inhibit-modification-hooks t))
+    (kill-rectangle iedit-rect-start iedit-rect-end fill)))
 
 (defun iedit-find-current-occurrence-overlay ()
   "Always return the current occurrence overlay  at point or point - 1,
