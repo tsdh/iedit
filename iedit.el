@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-02-05 23:59:16 Victor Ren>
+;; Time-stamp: <2012-02-07 00:04:38 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.93
@@ -408,14 +408,8 @@ Commands:
                                    'face 'font-lock-warning-face))))
   (force-mode-line-update))
 
-(defun iedit-printable (string)
-  "Return a omitted substring that is not longer than 50."
-  (if (> (length string) 50)
-      (concat (substring string 0 50) "...")
-    string))
-
 (defun iedit-rectangle-start (beg end)
-  "Start an iedit for the region as a rectangle"
+  "Start an iedit for the region as a rectangle."
   (barf-if-buffer-read-only)
   (setq iedit-mode (propertize " Iedit-RECT" 'face 'font-lock-warning-face))
   (setq iedit-occurrences-overlays nil)
@@ -485,9 +479,12 @@ occurrences if the user starts typing."
     unmatched-lines-overlay))
 
 (defun iedit-reset-aborting ()
-  "Turning iedit-mode off and reset iedit-aborting. `iedit-done'
-is postponed after the command is executed for avoiding
-iedit-occurrence-update is called for a removed overlay."
+  "Turning iedit-mode off and reset iedit-aborting.
+
+This is added to `post-command-hook when aborting iedit-mode is
+decided. `iedit-done' is postponed after the current command is
+executed for avoiding iedit-occurrence-update is called for a
+removed overlay."
   (iedit-done)
   (remove-hook 'post-command-hook 'iedit-reset-aborting t)
   (setq iedit-aborting nil))
@@ -496,9 +493,9 @@ iedit-occurrence-update is called for a removed overlay."
   "Update all occurrences.
 This modification hook is triggered when a user edits any
 occurrence and is responsible for updating all other occurrences.
-Current supported edits are insertion, yank, deletion and replacement.
-If this modification is going out of the occurrence, it will
-exit iedit mode."
+Current supported edits are insertion, yank, deletion and
+replacement.  If this modification is going out of the
+occurrence, it will exit iedit mode."
   (when (and (not iedit-aborting )
              (not undo-in-progress)) ; undo will do all the update
     ;; before modification
@@ -730,18 +727,9 @@ the buffer."
   (setq iedit-case-sensitive (not iedit-case-sensitive))
   (if iedit-last-occurrence-in-history
       (iedit-refresh iedit-last-occurrence-in-history)))
-(defun iedit-current-occurrence-string ()
-  ""
-  (let* ((ov (car iedit-occurrences-overlays))
-         (beg (overlay-start ov))
-         (end (overlay-end ov)))
-    (if (and ov (/=  beg end))
-        (regexp-quote (buffer-substring-no-properties beg end))
-      nil)))
 
 (defun iedit-toggle-buffering ()
   "Toggle buffering.
-
 This is intended to improve iedit's response time. If the number
 of occurrences are huge, iedit might be slow to update all the
 occurrences for each key stoke.  When buffering is on,
@@ -805,7 +793,6 @@ be applied to other occurrences when buffering is off."
 
 (defun iedit-number-occurrences (start-at &optional format)
   "Insert numbers in front of the occurrences.
-
 START-AT, if non-nil, should be a number from which to begin
 counting.  FORMAT, if non-nil, should be a format string to pass
 to `format' along with the line count.  When called interactively
@@ -835,9 +822,10 @@ The behavior is the same as `kill-rectangle' in rect mode."
   (let ((inhibit-modification-hooks t))
     (kill-rectangle iedit-rect-start iedit-rect-end fill)))
 
+;;; help functions
 (defun iedit-find-current-occurrence-overlay ()
-  "Always return the current occurrence overlay  at point or point - 1,
-since this function is supposed to be called in overlay local-map."
+  "Return the current occurrence overlay  at point or point - 1.
+This function is supposed to be called in overlay local-map."
   (or (iedit-find-overlay (point) 'iedit-occurrence-overlay-name)
       (iedit-find-overlay (1- (point)) 'iedit-occurrence-overlay-name)))
 
@@ -851,6 +839,28 @@ since this function is supposed to be called in overlay local-map."
             (setq found overlay)
           (setq overlays (cdr overlays)))))
     found))
+
+(defun iedit-current-occurrence-string ()
+  "Return occurrence string."
+  (let* ((ov (car iedit-occurrences-overlays))
+         (beg (overlay-start ov))
+         (end (overlay-end ov)))
+    (if (and ov (/=  beg end))
+        (regexp-quote (buffer-substring-no-properties beg end))
+      nil)))
+
+(defun iedit-printable (string)
+  "Return a omitted substring that is not longer than 50. STRING is already `regexp-quote'ed"
+  (let ((first-newline-index (string-match "$" string))
+        (length (length string)))
+    (if (and first-newline-index
+             (/= first-newline-index length))
+        (if (< first-newline-index 50)
+            (concat (substring string 0 first-newline-index) "...")
+          (concat (substring string 0 50) "..."))
+      (if (> length 50)
+          (concat (substring string 0 50) "...")
+        string))))
 
 (provide 'iedit)
 
