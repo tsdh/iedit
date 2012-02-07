@@ -1,8 +1,8 @@
-;;; iedit.el --- Edit multiple regions simultaneously.
+;;; iedit.el --- Edit multiple regions in one buffer simultaneously.
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-02-07 00:04:38 Victor Ren>
+;; Time-stamp: <2012-02-07 15:11:26 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.93
@@ -738,7 +738,11 @@ be applied to other occurrences when buffering is off."
   (interactive "*")
   (if iedit-buffering
       (iedit-stop-buffering)
-    (iedit-start-buffering)))
+    (iedit-start-buffering))
+  (message (concat "Iedit-mode buffering "
+                   (if iedit-buffering
+                       "started."
+                     "stopped."))))
 
 (defun iedit-start-buffering ()
   "Start buffering."
@@ -750,36 +754,37 @@ be applied to other occurrences when buffering is off."
   (message "Iedit-mode buffering."))
 
 (defun iedit-stop-buffering ()
-  "Stop buffering and apply the modification to other occurrences."
-  (let* ((inhibit-modification-hooks t)
-         (ov (iedit-find-current-occurrence-overlay))
-         (beg (overlay-start ov))
-         (end (overlay-end ov))
-         (modified-string (buffer-substring-no-properties beg end))
-         (offset (- (point) beg))) ;; delete-region moves cursor
-    (when (not (string= iedit-before-modification-string modified-string))
-      (save-excursion
-        ;; Rollback the current modification and buffer-undo-list. This is to
-        ;; avoid the inconsistency if user undoes modifications
-        (delete-region beg end)
-        (goto-char beg)
-        (insert-and-inherit iedit-before-modification-string)
-        (setq buffer-undo-list iedit-before-modification-undo-list)
-        (dolist (occurrence iedit-occurrences-overlays) ; todo:extract as a function
-          (let ((beginning (overlay-start occurrence))
-                (ending (overlay-end occurrence)))
-            (delete-region beginning ending)
-            (unless (eq beg end) ;; replacement
-              (goto-char beginning)
-              (insert-and-inherit modified-string)))))
-      (goto-char (+ (overlay-start ov) offset))))
+  "Stop buffering and apply the modification to other occurrences.
+If current point is not at any occurrence, the buffered
+modification is not going to be applied to other occurrences."
+  (let ((ov (iedit-find-current-occurrence-overlay)))
+    (when ov
+      (let* ((beg (overlay-start ov))
+             (end (overlay-end ov))
+             (modified-string (buffer-substring-no-properties beg end))
+             (offset (- (point) beg))) ;; delete-region moves cursor
+        (when (not (string= iedit-before-modification-string modified-string))
+          (save-excursion
+            ;; Rollback the current modification and buffer-undo-list. This is to
+            ;; avoid the inconsistency if user undoes modifications
+            (delete-region beg end)
+            (goto-char beg)
+            (insert-and-inherit iedit-before-modification-string)
+            (setq buffer-undo-list iedit-before-modification-undo-list)
+            (dolist (occurrence iedit-occurrences-overlays) ; todo:extract as a function
+              (let ((beginning (overlay-start occurrence))
+                    (ending (overlay-end occurrence)))
+                (delete-region beginning ending)
+                (unless (eq beg end) ;; replacement
+                  (goto-char beginning)
+                  (insert-and-inherit modified-string)))))
+          (goto-char (+ (overlay-start ov) offset))))))
   (setq iedit-buffering nil)
   (setq iedit-mode (propertize
                     (concat " Iedit:" (number-to-string (length iedit-occurrences-overlays)))
                     'face 'font-lock-warning-face))
   (force-mode-line-update)
-  (setq iedit-before-modification-undo-list nil)
-  (message "Iedit-mode buffering stopped."))
+  (setq iedit-before-modification-undo-list nil))
 
 (defvar iedit-number-line-counter 1
   "Occurrence number for 'iedit-number-occurrences")
