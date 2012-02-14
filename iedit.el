@@ -2,11 +2,11 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-02-09 00:46:07 Victor Ren>
+;; Time-stamp: <2012-02-14 14:29:11 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
-;; Version: 0.93
-;; X-URL: http://www.emacswiki.org/emacs/iedit.el
+;; Version: 0.94
+;; X-URL: http://www.emacswiki.org/emacs/Iedit
 ;; Compatibility: GNU Emacs: 22.x, 23.x, 24.x
 
 ;; This file is not part of GNU Emacs, but it is distributed under
@@ -544,50 +544,6 @@ occurrence, it will exit iedit mode."
                         (insert-and-inherit value)))))))))))))
 ;; (elp-instrument-list '(insert-and-inherit delete-region goto-char iedit-occurrence-update buffer-substring-no-properties string= re-search-forward replace-match))
 
-;; slowest version:
-;; (defun iedit-occurrence-update (occurrence after beg end &optional change)
-;;   "Update all occurrences.
-;; This modification hook is triggered when a user edits any
-;; occurrence and is responsible for updating all other
-;; occurrences."
-;;   (when (and after (not undo-in-progress)) ; undo will do all the work
-;;     (let ((value (buffer-substring-no-properties
-;;                   (overlay-start occurrence) (overlay-end occurrence)))
-;;           (inhibit-modification-hooks t))
-;;       (save-excursion
-;;         (dolist (another-occurrence iedit-occurrences-overlays)
-;;           (if (not (eq another-occurrence occurrence))
-;;               (progn
-;;                 (goto-char (overlay-start another-occurrence))
-;;                 (delete-region (overlay-start another-occurrence)
-;;                                (overlay-end another-occurrence))
-;;                 (insert value))))))))
-
-;; ;; todo \\_<
-;; (defun iedit-occurrence-update (occurrence after beg end &optional change)
-;;   "Update all occurrences.
-;; This modification hook is triggered when a user edits any
-;; occurrence and is responsible for updating all other
-;; occurrences."
-;;   (when (not undo-in-progress) ; undo will do all the work
-;;     (if (null after)
-;;         (if (or (< beg (overlay-start occurrence))
-;;                 (> end (overlay-end occurrence)))
-;;             (iedit-done)
-;;           (setq iedit-before-modification-string
-;;                 (buffer-substring-no-properties
-;;                  (overlay-start occurrence) (overlay-end occurrence))))
-;;       (let ((value (buffer-substring-no-properties
-;;                     (overlay-start occurrence) (overlay-end occurrence)))
-;;             (inhibit-modification-hooks t))
-;;         (save-excursion
-;;           (goto-char (overlay-end occurrence))
-;;           (while (re-search-forward iedit-before-modification-string nil t)
-;;             (replace-match value nil nil))
-;;           (goto-char (point-min))
-;;           (while (re-search-forward iedit-before-modification-string (overlay-start occurrence) t)
-;;             (replace-match value nil nil)))))))
-
 (defun iedit-next-occurrence ()
   "Move forward to the next occurrence in the `iedit'.
 If the point is already in the last occurrences, you are asked to type
@@ -648,7 +604,7 @@ the buffer."
 (defun iedit-toggle-unmatched-lines-visible (&optional arg)
   "Toggle whether to display unmatched lines.
 A prefix ARG specifies how many lines before and after the
-currences are not hided; negtive is treated the same as zero.
+occurrences are not hided; negative is treated the same as zero.
 
 If no prefix argument, the prefix argument last time or default
 value of `iedit-occurrence-context-lines' is used for this time."
