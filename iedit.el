@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-02-19 00:07:11 Victor Ren>
+;; Time-stamp: <2012-02-19 00:36:34 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.94
@@ -27,28 +27,23 @@
 
 ;;; Commentary:
 
-;; This package provides a more intuitive way of replace-string operation:
-;;
-;; - Select the occurrence in the buffer
-;;   In Transient Mark mode, just mark a region, the content of the
-;;   region will be used as the occurrence. (if Transient Mark mode is disabled,
-;;   using C-u C-x C-x or C-SPC C-SPC to activate it just for this one time).
-;;
+;; This package provides a more intuitive way of replace-string operation.
+;; Normal scenario of iedit-mode is like:
+
 ;; - Start iedit minor mode - by press C-;
-;;   All occurrences of the content in the buffer are highlighted
+;;   The target contents (all occurrences of a symbol, string or a rectangle) in
+;;   the buffer are highlighted.  The content varies corresponding to mark,
+;;   point and prefix. Refer to the comments of `iedit-mode'.
 ;;
 ;; - Edit one of the contents
 ;;   The change is applied to other contents simultaneously
 ;;
 ;; - Finish - by pressing C-; again
 
-;; If Transient Mark mode is disabled or the region is not active, the current
-;; symbol (returns from `current-word') is used as the occurrence by default.
+;; If you would like to operate on certain region, use "narrowing" first.
 
-;; You can also switch to iedit mode from isearch mode directly. The current
-;; search string is used as the occurrence.
-
-;; If you would like to replace-string on certain region, use "narrowing" first.
+;; With several lines of additional code, the package also provides rectangle
+;; support with visible rectangle highlighting, which is simular with `cua-rect'.
 
 ;;; Suggested key bindings:
 ;;
