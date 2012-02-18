@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-02-14 14:29:11 Victor Ren>
+;; Time-stamp: <2012-02-19 00:07:11 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.94
@@ -172,11 +172,10 @@ buffering, which means the modification to the current
 occurrence is not applied to other occurrences when it is true.")
 
 (defvar iedit-rectangle nil
- "This buffer local variable which indicates the current mode is
- iedit-rect or not." )
-
-(defvar iedit-rect-start "The top-left corner of rectangle.")
-(defvar iedit-rect-end "The bottom-right corner of rectangle.")
+  "This buffer local variable which is the rectangle geometry if
+ current mode is iedit-rect. Otherwise it is nil.
+(car iedit-rectangle) is the top-left corner and
+(cadr iedit-rectangle) is the bottom-right corner" )
 
 (defvar iedit-current-keymap)
 
@@ -194,8 +193,6 @@ occurrence is not applied to other occurrences when it is true.")
 (make-variable-buffer-local 'iedit-aborting)
 (make-variable-buffer-local 'iedit-buffering)
 (make-variable-buffer-local 'iedit-rectangle)
-(make-variable-buffer-local 'iedit-rect-start)
-(make-variable-buffer-local 'iedit-rect-end)
 (make-variable-buffer-local 'iedit-current-keymap)
 (make-variable-buffer-local 'iedit-occurrence-context-lines)
 
@@ -417,10 +414,8 @@ Commands:
   (barf-if-buffer-read-only)
   (setq iedit-mode (propertize " Iedit-RECT" 'face 'font-lock-warning-face))
   (setq iedit-occurrences-overlays nil)
-  (setq iedit-rectangle t)
+  (setq iedit-rectangle (list beg end))
   (setq iedit-current-keymap iedit-rect-local-map)
-  (setq iedit-rect-start beg)
-  (setq iedit-rect-end end)
   (force-mode-line-update)
   (run-hooks 'iedit-mode-hook)
   (add-hook 'kbd-macro-termination-hook 'iedit-done)
@@ -809,7 +804,9 @@ with a prefix argument, prompt for START-AT and FORMAT."
 The behavior is the same as `kill-rectangle' in rect mode."
   (interactive "*P")
   (let ((inhibit-modification-hooks t))
-    (kill-rectangle iedit-rect-start iedit-rect-end fill)))
+    (kill-rectangle (car iedit-rectangle)
+                    (cadr iedit-rectangle)
+                    fill)))
 
 ;;; help functions
 (defun iedit-find-current-occurrence-overlay ()
