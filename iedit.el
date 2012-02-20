@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-02-20 02:14:47 Victor Ren>
+;; Time-stamp: <2012-02-20 13:46:59 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.94
@@ -150,6 +150,7 @@ forward or backward successful")
 
 (defvar iedit-before-modification-undo-list nil
   "This is buffer local variable which is the buffer undo list before modification.")
+
 ;; `iedit-occurrence-update' gets called twice when change==0 and occurrence
 ;; is zero-width (beg==end)
 ;; -- for front and back insertion.
@@ -229,6 +230,7 @@ they exit Iedit mode before displaying global help."
   (let (same-window-buffer-names same-window-regexps)
     (iedit-help-for-help-internal)))
 
+;; todo: this function does not work
 (defun iedit-describe-bindings ()
   "Show a list of all keys defined in Iedit mode, and their definitions.
 This is like `describe-bindings', but displays only Iedit keys."
@@ -337,10 +339,10 @@ Commands:
   (interactive "P")
   (if iedit-mode
       (if (and transient-mark-mode mark-active (not (equal (mark) (point))))
-          ;; Restrict iedit-mode in this region todo: rethink the implementation
-          (let* ((beg (region-beginning))
-                 (end (region-end)))
-            (if (null (iedit-find-overlay-in-region beg end 'iedit-occurrence-overlay-name))
+          ;; Restrict iedit-mode
+          (let ((beg (region-beginning))
+                (end (region-end)))
+            (if (null (iedit-find-overlay beg end 'iedit-occurrence-overlay-name arg))
                 (iedit-done)
               (when iedit-buffering
                 (iedit-stop-buffering))
@@ -348,9 +350,12 @@ Commands:
               (if (null iedit-last-occurrence-in-history)
                   (iedit-done)
                 (deactivate-mark)
-                (remove-overlays (point-min) (point-max) iedit-occurrence-overlay-name t)
                 (iedit-show-all)
-                (iedit-refresh iedit-last-occurrence-in-history beg end)
+                (iedit-cleanup-occurrences-overlays beg end arg)
+                (setq iedit-mode (propertize
+                                  (concat " Iedit:" (number-to-string (length iedit-occurrences-overlays)))
+                                  'face 'font-lock-warning-face))
+                (force-mode-line-update)
                 (iedit-first-occurrence))))
         (iedit-done))
     (let (occurrence complete-symbol rect-string)
@@ -454,7 +459,7 @@ Commands:
   (if iedit-buffering
       (iedit-stop-buffering))
   (setq iedit-last-occurrence-in-history (iedit-current-occurrence-string))
-  (remove-overlays (point-min) (point-max) iedit-occurrence-overlay-name t)
+  (remove-overlays nil nil iedit-occurrence-overlay-name t)
   (iedit-show-all)
   (setq iedit-occurrences-overlays nil)
   (setq iedit-aborting nil)
@@ -621,11 +626,12 @@ the buffer."
 (defun iedit-last-occurrence ()
   "Move to the last occurrence."
   (interactive)
-  (setq pos (previous-single-char-property-change (point-max) 'iedit-occurrence-overlay-name))
-  (if (not (get-char-property (- (point-max) 1) 'iedit-occurrence-overlay-name))
-      (setq pos (previous-single-char-property-change pos 'iedit-occurrence-overlay-name)))
-  (setq iedit-forward-success t)
-  (message "Located the last occurrence."))
+  (let ((pos (previous-single-char-property-change (point-max) 'iedit-occurrence-overlay-name)))
+    (if (not (get-char-property (- (point-max) 1) 'iedit-occurrence-overlay-name))
+        (setq pos (previous-single-char-property-change pos 'iedit-occurrence-overlay-name)))
+    (setq iedit-forward-success t)
+    (goto-char pos)
+    (message "Located the last occurrence.")))
 
 (defun iedit-toggle-unmatched-lines-visible (&optional arg)
   "Toggle whether to display unmatched lines.
@@ -646,7 +652,7 @@ value of `iedit-occurrence-context-lines' is used for this time."
     (unless (and iedit-unmatched-lines-invisible
                  (= arg iedit-occurrence-context-lines))
       (when iedit-unmatched-lines-invisible
-        (remove-overlays (point-min) (point-max) iedit-invisible-overlay-name t))
+        (remove-overlays nil nil iedit-invisible-overlay-name t))
       (setq iedit-occurrence-context-lines arg)
       (setq iedit-unmatched-lines-invisible t)
       (iedit-hide-unmatched-lines iedit-occurrence-context-lines))))
@@ -654,7 +660,7 @@ value of `iedit-occurrence-context-lines' is used for this time."
 (defun iedit-show-all()
   "Show hided lines."
   (setq line-move-ignore-invisible nil)
-  (remove-overlays (point-min) (point-max) iedit-invisible-overlay-name t)
+  (remove-overlays nil nil iedit-invisible-overlay-name t)
   (remove-from-invisibility-spec '(iedit-invisible-overlay-name . t)))
 
 (defun iedit-hide-unmatched-lines (context-lines)
@@ -734,7 +740,7 @@ value of `iedit-occurrence-context-lines' is used for this time."
       (iedit-stop-buffering))
   (setq iedit-last-occurrence-in-history (iedit-current-occurrence-string))
   (when iedit-last-occurrence-in-history
-    (remove-overlays (point-min) (point-max) iedit-occurrence-overlay-name t)
+    (remove-overlays nil nil iedit-occurrence-overlay-name t)
     (iedit-show-all)
     (iedit-refresh iedit-last-occurrence-in-history (point-min) (point-max))))
 
@@ -842,10 +848,10 @@ The behavior is the same as `kill-rectangle' in rect mode."
 (defun iedit-find-current-occurrence-overlay ()
   "Return the current occurrence overlay  at point or point - 1.
 This function is supposed to be called in overlay local-map."
-  (or (iedit-find-overlay (point) 'iedit-occurrence-overlay-name)
-      (iedit-find-overlay (1- (point)) 'iedit-occurrence-overlay-name)))
+  (or (iedit-find-overlay-at-point (point) 'iedit-occurrence-overlay-name)
+      (iedit-find-overlay-at-point (1- (point)) 'iedit-occurrence-overlay-name)))
 
-(defun iedit-find-overlay (point property)
+(defun iedit-find-overlay-at-point (point property)
   "Return the overlay with PROPERTY at POINT."
   (let ((overlays (overlays-at point))
         found)
@@ -868,6 +874,13 @@ Return nil if occurrence string is empty string."
         (regexp-quote (buffer-substring-no-properties beg end))
       nil)))
 
+(defun iedit-find-overlay (beg end property &optional exclusive)
+  "Return a overlay with property in region, or out of the region if EXCLUSIVE is not nil."
+  (if exclusive
+      (or (iedit-find-overlay-in-region (point-min) beg property)
+          (iedit-find-overlay-in-region end (point-max) property))
+    (iedit-find-overlay-in-region beg end property)))
+
 (defun iedit-find-overlay-in-region (beg end property)
   "Return a overlay with property in region."
   (let ((overlays (overlays-in beg end))
@@ -880,6 +893,18 @@ Return nil if occurrence string is empty string."
             (setq found overlay)
           (setq overlays (cdr overlays)))))
     found))
+
+(defun iedit-cleanup-occurrences-overlays (beg end &optional inclusive)
+  "Remove overlays deleted from `iedit-occurrences-overlays'."
+  (if inclusive
+      (remove-overlays beg end iedit-occurrence-overlay-name t)
+    (remove-overlays (point-min) beg iedit-occurrence-overlay-name t)
+    (remove-overlays end (point-max) iedit-occurrence-overlay-name t))
+  (let (overlays)
+    (dolist (overlay iedit-occurrences-overlays)
+      (if (overlay-buffer overlay)
+          (push overlay overlays)))
+    (setq iedit-occurrences-overlays (nreverse overlays))))
 
 (defun iedit-printable (string)
   "Return a omitted substring that is not longer than 50.
