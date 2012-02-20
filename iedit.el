@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-02-20 13:46:59 Victor Ren>
+;; Time-stamp: <2012-02-20 14:29:08 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.94
@@ -304,9 +304,7 @@ This is like `describe-bindings', but displays only Iedit keys."
 ;;;###autoload
 (defun iedit-mode (&optional arg)
   "Toggle iedit mode.
-If iedit mode is off, turn iedit mode on. If iedit mode is on and
-region is active, iedit mode is restricted in the
-region. Otherwise turn iedit mode off.
+If iedit mode is off, turn iedit mode on.
 
 In Transient Mark mode, when iedit mode is turned on, all the
 occurrences of the current region are highlighted.  If one
@@ -326,13 +324,23 @@ You can also switch to iedit mode from isearch mode directly. The
 current search string is used as occurrence.  All occurrences of
 the current search string are highlighted.
 
-With a universal prefix argument and no active region, the
+With an universal prefix argument and no active region, the
 occurrence when iedit is turned off last time is used as
 occurrence.  This is intended to recover last iedit which is
 turned off by mistake.
 
-With a universal prefix argument and region active, interactively
+With an universal prefix argument and region active, interactively
 edit region as a string rectangle.
+
+If iedit mode is on and region is active, iedit mode is
+restricted in the region, e.g. the occurrences outside of the region
+is excluded.
+
+If iedit mode is on and region is active, with a
+prefix argument, iedit mode is restricted outside of the region,
+e.g. the occurrences in the region is excluded.
+
+Turn off iedit mode in other situations.
 
 Commands:
 \\{iedit-current-keymap}"
