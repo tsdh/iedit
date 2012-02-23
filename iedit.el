@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-02-22 23:28:30 Victor Ren>
+;; Time-stamp: <2012-02-23 22:17:08 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.94
@@ -199,7 +199,7 @@ occurrence is not applied to other occurrences when it is true.")
 (defvar iedit-current-keymap nil
   "The current keymap, `iedit-occurrence-keymap' or `iedit-rect-keymap'.")
 
-(defvar iedit-occurrence-context-lines 0
+(defvar iedit-occurrence-context-lines 1
   "The number of lines before or after the occurrence.")
 
 (make-variable-buffer-local 'iedit-occurrences-overlays)
@@ -270,7 +270,7 @@ This is like `describe-bindings', but displays only Iedit keys."
         (princ keymap)))))
 
 (defun iedit-describe-key ()
-  "Display documentation of the function invoked by iedit key."
+  "Display documentation of the function invoked by iedit mode key."
   (interactive)
   (let (same-window-buffer-names same-window-regexps)
     (call-interactively 'describe-key)))
@@ -401,6 +401,8 @@ Commands:
                 (deactivate-mark)
                 (iedit-show-all)
                 (iedit-cleanup-occurrences-overlays beg end arg)
+                (if iedit-unmatched-lines-invisible
+                    (iedit-hide-unmatched-lines iedit-occurrence-context-lines))
                 (setq iedit-mode (propertize
                                   (concat " Iedit:" (number-to-string
                                                      (length iedit-occurrences-overlays)))
@@ -640,7 +642,14 @@ occurrence, it will exit iedit mode."
                       (unless (eq beg end) ;; replacement
                         (goto-char beginning)
                         (insert-and-inherit value)))))))))))))
-;; (elp-instrument-list '(insert-and-inherit delete-region goto-char iedit-occurrence-update buffer-substring-no-properties string= re-search-forward replace-match))
+;; (elp-instrument-list '(insert-and-inherit
+;;                        delete-region
+;;                        goto-char
+;;                        iedit-occurrence-update
+;;                        buffer-substring-no-properties
+;;                        string=
+;;                        re-search-forward
+;;                        replace-match))
 
 (defun iedit-next-occurrence ()
   "Move forward to the next occurrence in the `iedit'.
@@ -729,10 +738,12 @@ If no prefix argument, the prefix argument last time or default
 value of `iedit-occurrence-context-lines' is used for this time."
   (interactive "P")
   (if (null arg)
+      ;; toggle visible
       (progn (setq iedit-unmatched-lines-invisible (not iedit-unmatched-lines-invisible))
              (if iedit-unmatched-lines-invisible
-                  (iedit-hide-unmatched-lines iedit-occurrence-context-lines)
+                 (iedit-hide-unmatched-lines iedit-occurrence-context-lines)
                (iedit-show-all)))
+    ;; reset invisible lines
     (setq arg (prefix-numeric-value arg))
     (if (< arg 0)
         (setq arg 0))
@@ -747,25 +758,25 @@ value of `iedit-occurrence-context-lines' is used for this time."
 (defun iedit-show-all()
   "Show hided lines."
   (setq line-move-ignore-invisible nil)
-  (remove-overlays nil nil iedit-invisible-overlay-name t)
-  (remove-from-invisibility-spec '(iedit-invisible-overlay-name . t)))
+  (remove-from-invisibility-spec '(iedit-invisible-overlay-name . t))
+  (remove-overlays nil nil iedit-invisible-overlay-name t))
 
 (defun iedit-hide-unmatched-lines (context-lines)
   "Hide unmatched lines using invisible overlay."
-  (let ((prev-occurrence-end 0)
+  (let ((prev-occurrence-end 1)
         (unmatched-lines nil))
     (save-excursion
       (dolist (overlay iedit-occurrences-overlays)
         (goto-char (overlay-start overlay))
         (forward-line (- context-lines))
         (let ((line-beginning (line-beginning-position)))
-          (if (> line-beginning (1+ prev-occurrence-end))
-              (push  (list (1+ prev-occurrence-end) (1- line-beginning)) unmatched-lines)))
+          (if (> line-beginning prev-occurrence-end)
+              (push  (list prev-occurrence-end (1- line-beginning)) unmatched-lines)))
         (goto-char (overlay-end overlay))
         (forward-line context-lines)
         (setq prev-occurrence-end (line-end-position)))
       (if (< prev-occurrence-end (point-max))
-          (push (list (1+ prev-occurrence-end) (point-max)) unmatched-lines))
+          (push (list prev-occurrence-end (point-max)) unmatched-lines))
       (when unmatched-lines
         (set (make-local-variable 'line-move-ignore-invisible) t)
         (add-to-invisibility-spec '(iedit-invisible-overlay-name . t))
