@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-02-24 01:23:14 Victor Ren>
+;; Time-stamp: <2012-02-25 00:37:29 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.94
@@ -356,12 +356,13 @@ occurrences simultaneously.
 
 If Transient Mark mode is disabled or the region is not active,
 the current symbol (returns from `current-word') is used as the
-occurrence by default.  The occurrences of the current
-symbol, but not include occurrences that are part of other
-symbols, are highlighted.  This is good for renaming refactoring
-during programming.  If you still want to match all the
-occurrences, even though they are parts of other symbols, you may
-have to select the symbol first.
+occurrence by default.  The occurrences of the current symbol,
+but not include occurrences that are part of other symbols, are
+highlighted.  With digit prefix argument 0, only symbols in
+current function are matched.  This is good for renaming
+refactoring during programming.  If you still want to match all
+the occurrences, even though they are parts of other symbols, you
+may have to select the symbol first.
 
 You can also switch to iedit mode from isearch mode directly. The
 current search string is used as occurrence.  All occurrences of
@@ -402,7 +403,9 @@ Commands:
               (iedit-restrict-region beg end arg)
               (iedit-first-occurrence)))
         (iedit-done))
-    (let (occurrence complete-symbol rect-string)
+    (let (occurrence complete-symbol rect-string
+                     (beg (point-min))
+                     (end (point-max)))
       (cond ((and arg
                   (or (not transient-mark-mode) (not mark-active)
                       (equal (mark) (point))))
@@ -414,6 +417,16 @@ Commands:
                          iedit-last-initial-string-global)
                     (setq occurrence iedit-last-initial-string-global)
                     (setq complete-symbol iedit-only-complete-symbol-global))
+                   ((and (= 0 (prefix-numeric-value arg))
+                         iedit-current-symbol-default
+                         (current-word t))
+                    (setq occurrence  (current-word))
+                    (when iedit-only-at-symbol-boundaries
+                      (setq complete-symbol t))
+                    (save-excursion
+                      (mark-defun)
+                      (setq beg (region-beginning))
+                      (setq end (region-end))))
                    (t (error "No candidate of the occurrence, cannot enable iedit mode."))))
             ((and arg
                   transient-mark-mode mark-active (not (equal (mark) (point))))
@@ -438,15 +451,15 @@ Commands:
             (iedit-rectangle-start beg end))
         (deactivate-mark)
         (setq iedit-case-sensitive-local iedit-case-sensitive-default)
-        (iedit-start occurrence)))))
+        (iedit-start occurrence beg end)))))
 
-(defun iedit-start (occurrence-exp)
+(defun iedit-start (occurrence-exp beg end)
   "Start an iedit for the occurrence-exp in the current buffer."
   (setq iedit-unmatched-lines-invisible iedit-unmatched-lines-invisible-default)
   (setq iedit-aborting nil)
   (setq iedit-rectangle nil)
   (setq iedit-current-keymap iedit-occurrence-keymap)
-  (iedit-refresh occurrence-exp (point-min) (point-max))
+  (iedit-refresh occurrence-exp beg end)
   (run-hooks 'iedit-mode-hook)
   ;; (add-hook 'mouse-leave-buffer-hook 'iedit-done)
   (add-hook 'kbd-macro-termination-hook 'iedit-done))
@@ -1009,7 +1022,7 @@ Return nil if occurrence string is empty string."
   (setq iedit-last-occurrence-local (iedit-current-occurrence-string))
   (deactivate-mark)
   (iedit-show-all)
-  (iedit-cleanup-occurrences-overlays beg end arg)
+  (iedit-cleanup-occurrences-overlays beg end inclusive)
   (if iedit-unmatched-lines-invisible
       (iedit-hide-unmatched-lines iedit-occurrence-context-lines))
   (setq iedit-mode (propertize

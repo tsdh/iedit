@@ -8,7 +8,7 @@ Most common scenario of using this package is renaming refactoring
 during programming.  Several enhancements are done to make it easier:
  - The symbol under point can be selected as occurrence by one key and only complete
    symbols are matched
- - Restrict symbols in current defun only by one command
+ - Restricting symbols in current function matched could be done by one command
  - Remember the renaming refactoring and re-apply to other buffers later
 
 This package also provides rectangle support with visible rectangle
