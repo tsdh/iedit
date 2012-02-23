@@ -1,5 +1,23 @@
-iedit - a better alternative of replace-string
+iedit - Edit multiple regions simultaneously
 ---------------------------------------------------------------------------------
-It is an Emacs minor mode and allows you to edit one occurrence of some text in a
-buffer (possibly narrowed), and simultaneously have all other occurrences edited
+It is an Emacs minor mode and allows you to edit one occurrence of some text in
+a buffer (possibly narrowed), and simultaneously have other occurrences edited
 in the same way.
+
+Most common scenario of using this package is renaming refactoring
+during programming.  Several enhancements are done to make it easier:
+ - The symbol under point can be selected as occurrence by one key and only complete
+   symbols are matched
+ - Restrict symbols in current defun only by one command
+ - Remember the renaming refactoring and re-apply to other buffers later
+
+This package also provides rectangle support with visible rectangle
+highlighting, i.e. you can interactively modify a rectangle.
+
+You can also use Iedit mode as a quick way to temporarily show only the buffer
+lines that match the current text being edited.  This gives you the effect of a
+temporary 'keep-lines' or 'occur'.  To get this effect, hit `C-' when in
+Iedit mode - it toggles hiding non-matching lines.
+
+There are also some other facilities you may never think about.  Read the
+document of function `iedit-mode' (C-h f iedit-mode RET) for more details.
