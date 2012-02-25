@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-02-25 00:37:29 Victor Ren>
+;; Time-stamp: <2012-02-26 00:27:58 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.94
@@ -27,26 +27,40 @@
 
 ;;; Commentary:
 
-;; This package provides a more intuitive way of replace-string operation.
-;; Normal scenario of iedit-mode is like:
-
-;; - Start iedit minor mode - by press C-;
-;;   The target contents (all occurrences of a symbol, string or a rectangle) in
-;;   the buffer are highlighted.  The content varies corresponding to mark,
-;;   point and prefix. Refer to the comments of `iedit-mode'.
+;; This package is an Emacs minor mode and allows you to edit one occurrence of
+;; some text in a buffer or region, and simultaneously have other occurrences
+;; edited in the same way.
 ;;
-;; - Edit one of the contents
-;;   The change is applied to other contents simultaneously
+;; Normal scenario of iedit-mode is like:
+;;
+;; - Highlight certain contents - by press C-;
+;;   All occurrences of a symbol, string or a rectangle in the buffer or a
+;;   region may be highlighted corresponding to current mark, point and prefix
+;;   argument. Refer to the document of `iedit-mode' for details.
+;;
+;; - Edit one of the occurrences
+;;   The change is applied to other occurrences simultaneously.
 ;;
 ;; - Finish - by pressing C-; again
-
-;; If you would like to operate on certain region, just mark the region (for
-;; instance, press C-M-h to mark current function) and press "C-;" again if
-;; iedit mode is active.  Or use "narrowing" first before activating iedit
-;; mode.
-
-;; This package also provides rectangle support with visible rectangle
+;;
+;; This package also provides rectangle support with *visible rectangle*
 ;; highlighting, which is similar with cua mode rectangle support.
+
+;; You can also use Iedit mode as a quick way to temporarily show only the
+;; buffer lines that match the current text being edited.  This gives you the
+;; effect of a temporary 'keep-lines' or 'occur'.  To get this effect, hit `C-'
+;; when in Iedit mode - it toggles hiding non-matching lines.
+
+;; Renaming refactoring is convinient in iedit mode
+;; - The symbol under point is selected as occurrence by default and only complete
+;;   symbols are matched
+;; - With digit prefix argument 0, only symbols in current function are matched
+;; - Restricting symbols in current region can be done by pressing C-; again
+;; - Last renaming refactoring is remembered and can be applied to other buffers
+;;   later
+
+;; There are also some other facilities you may never think about.  Refer to the
+;; document of function `iedit-mode' (C-h f iedit-mode RET) for more details.
 
 ;;; Default key bindings:
 ;;
@@ -360,7 +374,7 @@ occurrence by default.  The occurrences of the current symbol,
 but not include occurrences that are part of other symbols, are
 highlighted.  With digit prefix argument 0, only symbols in
 current function are matched.  This is good for renaming
-refactoring during programming.  If you still want to match all
+refactoring in programming.  If you still want to match all
 the occurrences, even though they are parts of other symbols, you
 may have to select the symbol first.
 
