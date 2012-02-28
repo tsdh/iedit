@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-02-26 00:27:58 Victor Ren>
+;; Time-stamp: <2012-02-28 12:28:33 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.94
@@ -194,15 +194,16 @@ forward or backward successful")
 ;; is zero-width (beg==end)
 ;; -- for front and back insertion.
 (defvar iedit-skipped-modification-once nil
-  "Variable used to skip first modification hook run when insertion against a zero-width occurrence.")
+  "Variable used to skip first modification hook run when
+  insertion against a zero-width occurrence.")
 
 (defvar iedit-aborting nil
   "This is buffer local variable which indicates iedit-mode is aborting.")
 
 (defvar iedit-buffering nil
   "This is buffer local variable which indicates iedit-mode is
-buffering, which means the modification to the current
-occurrence is not applied to other occurrences when it is true.")
+buffering, which means the modification to the current occurrence
+is not applied to other occurrences when it is true.")
 
 (defvar iedit-rectangle nil
   "This buffer local variable which is the rectangle geometry if
@@ -352,7 +353,8 @@ This is like `describe-bindings', but displays only Iedit keys."
                    (substitute-command-keys "\\[iedit-last-occurrence]") ":first/last "
                    (substitute-command-keys "\\[iedit-restrict-defun]") ":restrict "
                    (if iedit-rectangle
-                       (concat (substitute-command-keys "\\[iedit-kill-rectangle]") ":kill")))))
+                       (concat
+                        (substitute-command-keys "\\[iedit-kill-rectangle]") ":kill")))))
 
 (or (assq 'iedit-mode minor-mode-map-alist)
     (setq minor-mode-map-alist
@@ -361,6 +363,9 @@ This is like `describe-bindings', but displays only Iedit keys."
 ;;;###autoload
 (defun iedit-mode (&optional arg)
   "Toggle iedit mode.
+This command behaves differently, depending on the mark, point
+and prefix argument.
+
 If iedit mode is off, turn iedit mode on.
 
 In Transient Mark mode, when iedit mode is turned on, all the
@@ -611,6 +616,9 @@ removed overlay."
   (remove-hook 'post-command-hook 'iedit-reset-aborting t)
   (setq iedit-aborting nil))
 
+;; There are two ways to update all occurrence.  One is to redefine all key
+;; stroke map for overlay, the other is to figure out three basic modification
+;; in the modification hook.  This function chooses the latter.
 (defun iedit-occurrence-update (occurrence after beg end &optional change)
   "Update all occurrences.
 This modification hook is triggered when a user edits any
@@ -661,14 +669,6 @@ occurrence, it will exit iedit mode."
                       (unless (eq beg end) ;; replacement
                         (goto-char beginning)
                         (insert-and-inherit value)))))))))))))
-;; (elp-instrument-list '(insert-and-inherit
-;;                        delete-region
-;;                        goto-char
-;;                        iedit-occurrence-update
-;;                        buffer-substring-no-properties
-;;                        string=
-;;                        re-search-forward
-;;                        replace-match))
 
 (defun iedit-next-occurrence ()
   "Move forward to the next occurrence in the `iedit'.
@@ -807,11 +807,10 @@ value of `iedit-occurrence-context-lines' is used for this time."
   (let* ((ov (car iedit-occurrences-overlays))
          (beg (overlay-start ov))
          (end (overlay-end ov)))
-    (when (/= beg end)
-      (let ((inhibit-modification-hooks t))
-        (save-excursion
-          (dolist (occurrence  iedit-occurrences-overlays)
-            (apply function (overlay-start occurrence) (overlay-end occurrence) args)))))))
+    (let ((inhibit-modification-hooks t))
+      (save-excursion
+        (dolist (occurrence  iedit-occurrences-overlays)
+          (apply function (overlay-start occurrence) (overlay-end occurrence) args))))))
 
 (defun iedit-upcase-occurrences ()
   "Covert occurrences to upper case."
