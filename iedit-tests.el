@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-02-28 10:23:08 Victor Ren>
+;; Time-stamp: <2012-02-28 12:27:32 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.94
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -249,6 +249,44 @@ foo"
  barfoo
   barfoo
     barfoo")))))
+
+(ert-deftest iedit-rectangle-start-test ()
+  (with-iedit-test-fixture
+"foo
+ foo
+  barfoo
+    foo"
+   (lambda ()
+   (iedit-mode)
+   (set-mark-command nil)
+   (forward-char 3)
+   (forward-line 3)
+   (iedit-mode)
+   (should (equal iedit-rectangle nil))
+   (iedit-mode)
+   (exchange-point-and-mark)
+   (iedit-mode 4)
+   (should (equal iedit-rectangle '(1 19))))))
+
+(ert-deftest iedit-kill-rectangle-test ()
+  (with-iedit-test-fixture
+"foo
+ foo
+  barfoo
+    foo"
+   (lambda ()
+   (iedit-mode)
+   (set-mark-command nil)
+   (goto-char 22)
+   (iedit-mode 4)
+   (should (equal iedit-rectangle '(1 22)))
+   (iedit-kill-rectangle)
+   (should (string= (buffer-string)
+"
+o
+arfoo
+ foo"))
+ (should (equal killed-rectangle '("foo" " fo" "  b" "   "))))))
 
 (defvar iedit-printable-test-lists
   '(("" "")
