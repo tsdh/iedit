@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-02-28 12:28:33 Victor Ren>
+;; Time-stamp: <2012-03-01 00:50:47 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.94
@@ -70,7 +70,6 @@
 
 ;;; todo:
 ;; - Add more easy access keys for whole occurrence
-;; - ert unit test
 
 ;;; Contributors
 ;; Adam Lindberg <eproxus@gmail.com> added a case sensitivity option that can be toggled.
