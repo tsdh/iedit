@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-03-01 00:50:47 Victor Ren>
+;; Time-stamp: <2012-03-01 01:47:04 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.94
@@ -36,7 +36,7 @@
 ;; - Highlight certain contents - by press C-;
 ;;   All occurrences of a symbol, string or a rectangle in the buffer or a
 ;;   region may be highlighted corresponding to current mark, point and prefix
-;;   argument. Refer to the document of `iedit-mode' for details.
+;;   argument.  Refer to the document of `iedit-mode' for details.
 ;;
 ;; - Edit one of the occurrences
 ;;   The change is applied to other occurrences simultaneously.
@@ -102,21 +102,21 @@
   :group 'iedit)
 
 (defcustom iedit-case-sensitive-default t
-  "If no-nil, matching is case sensitive"
+  "If no-nil, matching is case sensitive."
   :type 'boolean
   :group 'iedit)
 
 (defcustom iedit-only-at-symbol-boundaries t
   "If no-nil, matches have to start and end at symbol boundaries.
-  For example, when invoking iedit-mode on the \"in\" in the
+For example, when invoking `iedit-mode' on the \"in\" in the
   sentence \"The king in the castle...\", the \"king\" is not
   edited."
   :type 'boolean
   :group 'iedit)
 
 (defcustom iedit-unmatched-lines-invisible-default nil
-  "If no-nil, hide lines that do not cover any occurrences by
-default."
+  "If no-nil, hide lines that do not cover any occurrences by default."
+
   :type 'boolean
   :group 'iedit)
 
@@ -142,8 +142,7 @@ default."
   "This is a global variable which is the last initial occurrence string.")
 
 (defvar iedit-initial-string-local nil
-  "This is buffer local variable which is the initial string
-  to start iedit mode.")
+  "This is buffer local variable which is the initial string to start iedit mode.")
 
 (defvar iedit-occurrences-overlays nil
   "The occurrences slot contains a list of overlays used to
@@ -153,11 +152,11 @@ configurable via `iedit-occurrence-face'.")
 
 (defvar iedit-case-sensitive-local iedit-case-sensitive-default
   "This is buffer local variable. If no-nil, matching is case
-  sensitive.")
+sensitive.")
 
 (defvar iedit-case-sensitive-global iedit-case-sensitive-default
-  "This is global variable. If no-nil, matching is case
-  sensitive.")
+  "This is global variable.
+If no-nil, matching is case sensitive.")
 
 (defvar iedit-unmatched-lines-invisible nil
   "This is buffer local variable which indicates whether
@@ -194,10 +193,10 @@ forward or backward successful")
 ;; -- for front and back insertion.
 (defvar iedit-skipped-modification-once nil
   "Variable used to skip first modification hook run when
-  insertion against a zero-width occurrence.")
+insertion against a zero-width occurrence.")
 
 (defvar iedit-aborting nil
-  "This is buffer local variable which indicates iedit-mode is aborting.")
+  "This is buffer local variable which indicates iedit mode is aborting.")
 
 (defvar iedit-buffering nil
   "This is buffer local variable which indicates iedit-mode is
@@ -206,9 +205,9 @@ is not applied to other occurrences when it is true.")
 
 (defvar iedit-rectangle nil
   "This buffer local variable which is the rectangle geometry if
- current mode is iedit-rect. Otherwise it is nil.
-(car iedit-rectangle) is the top-left corner and
-(cadr iedit-rectangle) is the bottom-right corner" )
+current mode is iedit-rect. Otherwise it is nil.
+\(car iedit-rectangle) is the top-left corner and
+\(cadr iedit-rectangle) is the bottom-right corner" )
 
 (defvar iedit-current-keymap nil
   "The current keymap, `iedit-occurrence-keymap' or `iedit-rect-keymap'.")
@@ -445,7 +444,7 @@ Commands:
                       (mark-defun)
                       (setq beg (region-beginning))
                       (setq end (region-end))))
-                   (t (error "No candidate of the occurrence, cannot enable iedit mode."))))
+                   (t (error "No candidate of the occurrence, cannot enable iedit mode"))))
             ((and arg
                   transient-mark-mode mark-active (not (equal (mark) (point))))
              (setq rect-string t))
@@ -460,7 +459,7 @@ Commands:
              (setq occurrence  (current-word))
              (when iedit-only-at-symbol-boundaries
                (setq complete-symbol t)))
-            (t (error "No candidate of the occurrence, cannot enable iedit mode.")))
+            (t (error "No candidate of the occurrence, cannot enable iedit mode")))
       (setq iedit-only-complete-symbol-local complete-symbol)
       (if rect-string
           (let ((beg (region-beginning))
@@ -472,7 +471,7 @@ Commands:
         (iedit-start occurrence beg end)))))
 
 (defun iedit-start (occurrence-exp beg end)
-  "Start an iedit for the occurrence-exp in the current buffer."
+  "Start an iedit for the OCCURRENCE-EXP in the current buffer."
   (setq iedit-unmatched-lines-invisible iedit-unmatched-lines-invisible-default)
   (setq iedit-aborting nil)
   (setq iedit-rectangle nil)
@@ -564,7 +563,7 @@ Commands:
   "Apply last modification in iedit mode to the current buffer or an active region."
   (interactive "*P")
   (or iedit-last-initial-string-global
-      (error "No modification available."))
+      (error "No modification available"))
   (let ((occurrence-exp (regexp-quote iedit-last-initial-string-global))
         (replacement  iedit-last-occurrence-global)
         (case-fold-search (not iedit-case-sensitive-global))
@@ -605,7 +604,7 @@ occurrences if the user starts typing."
     unmatched-lines-overlay))
 
 (defun iedit-reset-aborting ()
-  "Turning iedit-mode off and reset iedit-aborting.
+  "Turning `iedit-mode' off and reset iedit-aborting.
 
 This is added to `post-command-hook when aborting iedit-mode is
 decided. `iedit-done' is postponed after the current command is
@@ -872,7 +871,7 @@ This function preserves case."
 ;; todo: add cancel buffering
 (defun iedit-toggle-buffering ()
   "Toggle buffering.
-This is intended to improve iedit's response time. If the number
+This is intended to improve iedit's response time.  If the number
 of occurrences are huge, iedit might be slow to update all the
 occurrences for each key stoke.  When buffering is on,
 modification is only applied to the current occurrence and will
@@ -928,7 +927,7 @@ modification is not going to be applied to other occurrences."
   (setq iedit-before-modification-undo-list nil))
 
 (defvar iedit-number-line-counter 1
-  "Occurrence number for 'iedit-number-occurrences")
+  "Occurrence number for 'iedit-number-occurrences.")
 
 (defun iedit-default-line-number-format (start-at)
   (concat "%"
@@ -1028,7 +1027,7 @@ Return nil if occurrence string is empty string."
     found))
 
 (defun iedit-restrict-region (beg end &optional inclusive)
-  "Restricting iedit mode in a region"
+  "Restricting iedit mode in a region."
   (when iedit-buffering
     (iedit-stop-buffering))
   (setq iedit-last-occurrence-local (iedit-current-occurrence-string))
