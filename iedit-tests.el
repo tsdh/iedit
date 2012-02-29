@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-02-28 12:27:32 Victor Ren>
+;; Time-stamp: <2012-03-01 00:49:15 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.94
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -288,6 +288,31 @@ arfoo
  foo"))
  (should (equal killed-rectangle '("foo" " fo" "  b" "   "))))))
 
+(ert-deftest iedit-restrict-defun-test ()
+  (with-iedit-test-fixture
+"a
+(defun foo (foo bar foo)
+\"foo bar foobar\" nil)
+(defun bar (bar foo bar)
+  \"bar foo barfoo\" nil)"
+   (lambda ()
+      (iedit-mode)
+      (emacs-lisp-mode)
+      (goto-char 5)
+      (iedit-mode)
+      (iedit-restrict-defun)
+      (should (= 1 (length iedit-occurrences-overlays)))
+      (iedit-mode)
+      (goto-char 13)
+      (iedit-mode 0)
+      (should (= 4 (length iedit-occurrences-overlays)))
+      (iedit-mode)
+      (iedit-mode)
+      (mark-defun)
+      (iedit-mode)
+      (should (= 4 (length iedit-occurrences-overlays))))))
+
+
 (defvar iedit-printable-test-lists
   '(("" "")
     ("abc" "abc")
@@ -301,6 +326,16 @@ abcd" "12345678901234567890123456789012345678901234567890...")))
 (ert-deftest iedit-printable-test ()
   (dolist (test iedit-printable-test-lists)
     (should (string= (iedit-printable (car test)) (cadr test)))))
+
+
+;; (elp-instrument-list '(insert-and-inherit
+;;                        delete-region
+;;                        goto-char
+;;                        iedit-occurrence-update
+;;                        buffer-substring-no-properties
+;;                        string=
+;;                        re-search-forward
+;;                        replace-match))
 
 
 ;;; iedit-tests.el ends here
