@@ -2,10 +2,10 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-03-01 01:47:04 Victor Ren>
+;; Time-stamp: <2012-03-02 15:49:40 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
-;; Version: 0.94
+;; Version: 0.95
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
 ;; Compatibility: GNU Emacs: 22.x, 23.x, 24.x
 
@@ -51,7 +51,7 @@
 ;; effect of a temporary 'keep-lines' or 'occur'.  To get this effect, hit `C-'
 ;; when in Iedit mode - it toggles hiding non-matching lines.
 
-;; Renaming refactoring is convinient in iedit mode
+;; Renaming refactoring is convenient in iedit mode
 ;; - The symbol under point is selected as occurrence by default and only complete
 ;;   symbols are matched
 ;; - With digit prefix argument 0, only symbols in current function are matched
@@ -67,6 +67,8 @@
 ;; (define-key global-map (kbd "C-;") 'iedit-mode)
 ;; (define-key isearch-mode-map (kbd "C-;") 'iedit-mode)
 ;; (define-key esc-map (kbd "C-;") 'iedit-execute-last-modification)
+;; (define-key help-map (kbd "C-;") 'iedit-mode-defun)
+;; (define-key global-map [C-return] 'iedit-rectangle-mode)
 
 ;;; todo:
 ;; - Add more easy access keys for whole occurrence
@@ -120,6 +122,11 @@ For example, when invoking `iedit-mode' on the \"in\" in the
   :type 'boolean
   :group 'iedit)
 
+(defcustom iedit-transtient-mark-sensitive t
+  "If no-nil, `iedit-mode' is sensitive to the Transient Mark mode."
+  :type 'boolean
+  :group 'iedit)
+
 (defvar iedit-mode-hook nil
   "Function(s) to call after starting up an iedit.")
 
@@ -137,6 +144,8 @@ For example, when invoking `iedit-mode' on the \"in\" in the
 (define-key global-map (kbd "C-;") 'iedit-mode)
 (define-key isearch-mode-map (kbd "C-;") 'iedit-mode)
 (define-key esc-map (kbd "C-;") 'iedit-execute-last-modification)
+(define-key help-map (kbd "C-;") 'iedit-mode-defun)
+(define-key global-map [C-return] 'iedit-rectangle-mode)
 
 (defvar iedit-last-initial-string-global nil
   "This is a global variable which is the last initial occurrence string.")
@@ -315,12 +324,12 @@ This is like `describe-bindings', but displays only Iedit keys."
     (define-key map (kbd "M-U") 'iedit-upcase-occurrences)
     (define-key map (kbd "M-L") 'iedit-downcase-occurrences)
     (define-key map (kbd "M-R") 'iedit-replace-occurrences)
-    (define-key map (kbd "M-B") 'iedit-blank-occurrences)
+    (define-key map (kbd "M-SPC") 'iedit-blank-occurrences)
     (define-key map (kbd "M-C") 'iedit-toggle-case-sensitive)
     (define-key map (kbd "M-D") 'iedit-delete-occurrences)
     (define-key map (kbd "M-N") 'iedit-number-occurrences)
     (define-key map (kbd "M-;") 'iedit-apply-global-modification)
-    (define-key map [C-return] 'iedit-toggle-buffering)
+    (define-key map (kbd "M-B") 'iedit-toggle-buffering)
     (define-key map (kbd "M-<") 'iedit-first-occurrence)
     (define-key map (kbd "M->") 'iedit-last-occurrence)
     (define-key map (kbd "M-H") 'iedit-restrict-defun)
@@ -361,41 +370,38 @@ This is like `describe-bindings', but displays only Iedit keys."
 ;;;###autoload
 (defun iedit-mode (&optional arg)
   "Toggle iedit mode.
-This command behaves differently, depending on the mark, point
-and prefix argument.
+This command behaves differently, depending on the mark, point,
+prefix argument and variable `iedit-transtient-mark-sensitive'.
 
 If iedit mode is off, turn iedit mode on.
 
-In Transient Mark mode, when iedit mode is turned on, all the
-occurrences of the current region are highlighted.  If one
-occurrence is modified, the change are propagated to all other
-occurrences simultaneously.
+When iedit mode is turned on, all the occurrences of the current
+region are highlighted.  If one occurrence is modified, the
+change are propagated to all other occurrences simultaneously.
 
-If Transient Mark mode is disabled or the region is not active,
-the current symbol (returns from `current-word') is used as the
-occurrence by default.  The occurrences of the current symbol,
-but not include occurrences that are part of other symbols, are
-highlighted.  With digit prefix argument 0, only symbols in
-current function are matched.  This is good for renaming
-refactoring in programming.  If you still want to match all
-the occurrences, even though they are parts of other symbols, you
-may have to select the symbol first.
+If region is not active, the current symbol (returns from
+`current-word') is used as the occurrence by default.  The
+occurrences of the current symbol, but not include occurrences
+that are part of other symbols, are highlighted.  With digit
+prefix argument 0, only symbols in current function are matched.
+This is good for renaming refactoring in programming.  If you
+still want to match all the occurrences, even though they are
+parts of other symbols, you may have to mark the symbol first.
 
 You can also switch to iedit mode from isearch mode directly. The
 current search string is used as occurrence.  All occurrences of
 the current search string are highlighted.
 
-With an universal prefix argument and no active region, the
-occurrence when iedit is turned off last time in current buffer
-is used as occurrence.  This is intended to recover last iedit
-which is turned off by mistake.
+With an universal prefix argument, the occurrence when iedit is
+turned off last time in current buffer is used as occurrence.
+This is intended to recover last iedit which is turned off by
+mistake.  If region active, `iedit-mode' is limited within the
+current region.
 
-With repeated universal prefix argument and no active region, the
-occurrence when iedit is turned off last time (might be in other
-buffer) is used as occurrence.
-
-With an universal prefix argument and region active, interactively
-edit region as a string rectangle.
+With repeated universal prefix argument, the occurrence when
+iedit is turned off last time (might be in other buffer) is used
+as occurrence.  If region active, `iedit-mode' is limited within
+the current region.
 
 If iedit mode is on and region is active, iedit mode is
 restricted in the region, e.g. the occurrences outside of the region
@@ -411,44 +417,36 @@ Commands:
 \\{iedit-current-keymap}"
   (interactive "P")
   (if iedit-mode
-      (if (and transient-mark-mode mark-active (not (equal (mark) (point))))
-          ;; Restrict iedit-mode
-          (let ((beg (region-beginning))
-                (end (region-end)))
-            (if (null (iedit-find-overlay beg end 'iedit-occurrence-overlay-name arg))
-                (iedit-done)
-              (iedit-restrict-region beg end arg)
-              (iedit-first-occurrence)))
-        (iedit-done))
-    (let (occurrence complete-symbol rect-string
-                     (beg (point-min))
-                     (end (point-max)))
+      (iedit-mode-on-action arg)
+    (let (occurrence
+          complete-symbol
+          (beg (point-min))
+          (end (point-max)))
+      (when (and arg (iedit-region-active))
+        (setq beg (region-beginning))
+        (setq end (region-end)))
       (cond ((and arg
-                  (or (not transient-mark-mode) (not mark-active)
-                      (equal (mark) (point))))
-             (cond ((and (= 4 (prefix-numeric-value arg))
-                         iedit-last-occurrence-local)
-                    (setq occurrence iedit-last-occurrence-local)
-                    (setq complete-symbol iedit-only-complete-symbol-local))
-                   ((and (= 16 (prefix-numeric-value arg))
-                         iedit-last-initial-string-global)
-                    (setq occurrence iedit-last-initial-string-global)
-                    (setq complete-symbol iedit-only-complete-symbol-global))
-                   ((and (= 0 (prefix-numeric-value arg))
-                         iedit-current-symbol-default
-                         (current-word t))
-                    (setq occurrence  (current-word))
-                    (when iedit-only-at-symbol-boundaries
-                      (setq complete-symbol t))
-                    (save-excursion
-                      (mark-defun)
-                      (setq beg (region-beginning))
-                      (setq end (region-end))))
-                   (t (error "No candidate of the occurrence, cannot enable iedit mode"))))
+                  (= 4 (prefix-numeric-value arg))
+                  iedit-last-occurrence-local)
+             (setq occurrence iedit-last-occurrence-local)
+             (setq complete-symbol iedit-only-complete-symbol-local))
             ((and arg
-                  transient-mark-mode mark-active (not (equal (mark) (point))))
-             (setq rect-string t))
-            ((and transient-mark-mode mark-active (not (equal (mark) (point))))
+                  (= 16 (prefix-numeric-value arg))
+                  iedit-last-initial-string-global)
+             (setq occurrence iedit-last-initial-string-global)
+             (setq complete-symbol iedit-only-complete-symbol-global))
+            ((and arg
+                  (= 0 (prefix-numeric-value arg))
+                  iedit-current-symbol-default
+                  (current-word t))
+             (setq occurrence  (current-word))
+             (when iedit-only-at-symbol-boundaries
+               (setq complete-symbol t))
+             (save-excursion
+               (mark-defun)
+               (setq beg (region-beginning))
+               (setq end (region-end))))
+            ((iedit-region-active)
              (setq occurrence  (buffer-substring-no-properties
                                 (mark) (point))))
             ((and isearch-mode (not (string= isearch-string "")))
@@ -461,14 +459,39 @@ Commands:
                (setq complete-symbol t)))
             (t (error "No candidate of the occurrence, cannot enable iedit mode")))
       (setq iedit-only-complete-symbol-local complete-symbol)
-      (if rect-string
-          (let ((beg (region-beginning))
-                (end (region-end)))
-            (deactivate-mark)
-            (iedit-rectangle-start beg end))
-        (deactivate-mark)
-        (setq iedit-case-sensitive-local iedit-case-sensitive-default)
-        (iedit-start occurrence beg end)))))
+      (deactivate-mark t)
+      (setq iedit-case-sensitive-local iedit-case-sensitive-default)
+      (iedit-start occurrence beg end))))
+
+;;;###autoload
+(defun iedit-mode-defun ()
+  "Toggle `iedit-mode' on currenct defun."
+  (interactive)
+  (iedit-mode 0))
+
+;;;###autoload
+(defun iedit-rectangle-mode ()
+  "Toggle iedit-RECT mode."
+  (interactive)
+  (if iedit-mode
+      (iedit-mode-on-action)
+    (if (iedit-region-active)
+        (let ((beg (region-beginning))
+              (end (region-end)))
+          (deactivate-mark t)
+          (iedit-rectangle-start beg end)))))
+
+(defun iedit-mode-on-action (&optional arg)
+  "Turn off iedit-mode or restrict it in a region."
+  (if (iedit-region-active)
+      ;; Restrict iedit-mode
+      (let ((beg (region-beginning))
+            (end (region-end)))
+        (if (null (iedit-find-overlay beg end 'iedit-occurrence-overlay-name arg))
+            (iedit-done)
+          (iedit-restrict-region beg end arg)
+          (iedit-first-occurrence)))
+    (iedit-done)))
 
 (defun iedit-start (occurrence-exp beg end)
   "Start an iedit for the OCCURRENCE-EXP in the current buffer."
@@ -510,14 +533,10 @@ Commands:
 (defun iedit-rectangle-start (beg end)
   "Start an iedit for the region as a rectangle."
   (barf-if-buffer-read-only)
-  (setq iedit-mode (propertize " Iedit-RECT" 'face 'font-lock-warning-face))
   (setq iedit-occurrences-overlays nil)
   (setq iedit-rectangle (list beg end))
   (setq iedit-initial-string-local nil)
   (setq iedit-current-keymap iedit-rect-keymap)
-  (force-mode-line-update)
-  (run-hooks 'iedit-mode-hook)
-  (add-hook 'kbd-macro-termination-hook 'iedit-done)
   (save-excursion
     (let ((beg-col (progn (goto-char beg) (current-column)))
           (end-col (progn (goto-char end) (current-column))))
@@ -535,7 +554,13 @@ Commands:
                        iedit-occurrences-overlays)
                  (forward-line 1))
             until (> (point) end))
-      (setq iedit-occurrences-overlays (nreverse iedit-occurrences-overlays)))))
+      (setq iedit-occurrences-overlays (nreverse iedit-occurrences-overlays))))
+  (setq iedit-mode (propertize
+                    (concat " Iedit-RECT:" (number-to-string (length iedit-occurrences-overlays)))
+                    'face 'font-lock-warning-face))
+  (force-mode-line-update)
+  (run-hooks 'iedit-mode-hook)
+  (add-hook 'kbd-macro-termination-hook 'iedit-done))
 
 (defun iedit-done ()
   "Exit iedit mode."
@@ -573,7 +598,7 @@ Commands:
       (setq replacement (downcase replacement)))
     (if iedit-only-complete-symbol-global
         (setq occurrence-exp (concat "\\_<"  occurrence-exp "\\_>")))
-    (if (and transient-mark-mode mark-active (not (equal (mark) (point))))
+    (if (iedit-region-active)
         (progn
           (setq beg (region-beginning))
           (setq end (region-end)))
@@ -890,7 +915,9 @@ be applied to other occurrences when buffering is off."
   (setq iedit-buffering t)
   (setq iedit-before-modification-string (iedit-current-occurrence-string))
   (setq iedit-before-modification-undo-list buffer-undo-list)
-  (setq iedit-mode (propertize " Iedit-B" 'face 'font-lock-warning-face))
+  (setq iedit-mode (propertize
+                    (concat " Iedit-B:" (number-to-string (length iedit-occurrences-overlays)))
+                    'face 'font-lock-warning-face))
   (force-mode-line-update))
 
 (defun iedit-stop-buffering ()
@@ -921,7 +948,8 @@ modification is not going to be applied to other occurrences."
           (goto-char (+ (overlay-start ov) offset))))))
   (setq iedit-buffering nil)
   (setq iedit-mode (propertize
-                    (concat " Iedit:" (number-to-string (length iedit-occurrences-overlays)))
+                    (concat (if iedit-rectangle " Iedit-RECT:" " Iedit:")
+                            (number-to-string (length iedit-occurrences-overlays)))
                     'face 'font-lock-warning-face))
   (force-mode-line-update)
   (setq iedit-before-modification-undo-list nil))
@@ -1031,7 +1059,7 @@ Return nil if occurrence string is empty string."
   (when iedit-buffering
     (iedit-stop-buffering))
   (setq iedit-last-occurrence-local (iedit-current-occurrence-string))
-  (deactivate-mark)
+  (deactivate-mark t)
   (iedit-show-all)
   (iedit-cleanup-occurrences-overlays beg end inclusive)
   (if iedit-unmatched-lines-invisible
@@ -1067,6 +1095,13 @@ STRING is already `regexp-quote'ed"
       (if (> length 50)
           (concat (substring string 0 50) "...")
         string))))
+
+(defun iedit-region-active ()
+  "Return t if mark is active and not empty region."
+  (and (if iedit-transtient-mark-sensitive
+           transient-mark-mode
+         t)
+       mark-active (not (equal (mark) (point)))))
 
 (provide 'iedit)
 

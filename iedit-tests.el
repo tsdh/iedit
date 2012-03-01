@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-03-01 00:49:15 Victor Ren>
+;; Time-stamp: <2012-03-03 14:43:39 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.94
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -35,15 +35,28 @@
     (should (byte-compile-file "iedit.el"))
     (delete-file "iedit.elc" nil)))
 
-
 (defun with-iedit-test-fixture (input-buffer-string body)
   "iedit test fixture"
-  (unwind-protect
-      (with-temp-buffer
-        (insert input-buffer-string)
-        (goto-char 1)
-        (iedit-mode)
-        (funcall body))))
+  (let ((old-transient-mark-mode transient-mark-mode)
+        (old-iedit-transtient-sensitive iedit-transtient-mark-sensitive))
+    (unwind-protect
+        (progn
+          (with-temp-buffer
+            (transient-mark-mode t)
+            (setq iedit-transtient-mark-sensitive t)
+            (insert input-buffer-string)
+            (goto-char 1)
+            (iedit-mode)
+            (funcall body))
+          (with-temp-buffer
+            (setq iedit-transtient-mark-sensitive nil)
+            (transient-mark-mode -1)
+            (insert input-buffer-string)
+            (goto-char 1)
+            (iedit-mode)
+            (funcall body)))
+      (transient-mark-mode old-transient-mark-mode)
+      (setq iedit-transtient-mark-sensitive old-transient-mark-mode))))
 
 (ert-deftest iedit-mode-base-test ()
   (with-iedit-test-fixture
@@ -58,6 +71,27 @@
      (forward-line 2)
      (iedit-mode)
      (should (= 2 (length iedit-occurrences-overlays)))
+     (iedit-mode)
+     (should (null iedit-occurrences-overlays)))))
+
+(ert-deftest iedit-mode-start-from-isearch-test ()
+  (with-iedit-test-fixture
+"foo
+  foo
+   barfoo
+   foo"
+   (lambda ()
+     (should (= 3 (length iedit-occurrences-overlays)))
+     (should (string= iedit-initial-string-local "foo"))
+     (iedit-mode)
+     (forward-line 2)
+     (isearch-mode t)
+     (isearch-process-search-char ?f)
+     (isearch-process-search-char ?o)
+     (isearch-process-search-char ?o)
+     (iedit-mode)
+     (should (string= iedit-initial-string-local "foo"))
+     (should (= 4 (length iedit-occurrences-overlays)))
      (iedit-mode)
      (should (null iedit-occurrences-overlays)))))
 
@@ -261,11 +295,7 @@ foo"
    (set-mark-command nil)
    (forward-char 3)
    (forward-line 3)
-   (iedit-mode)
-   (should (equal iedit-rectangle nil))
-   (iedit-mode)
-   (exchange-point-and-mark)
-   (iedit-mode 4)
+   (iedit-rectangle-mode)
    (should (equal iedit-rectangle '(1 19))))))
 
 (ert-deftest iedit-kill-rectangle-test ()
@@ -278,7 +308,7 @@ foo"
    (iedit-mode)
    (set-mark-command nil)
    (goto-char 22)
-   (iedit-mode 4)
+   (iedit-rectangle-mode )
    (should (equal iedit-rectangle '(1 22)))
    (iedit-kill-rectangle)
    (should (string= (buffer-string)
@@ -311,6 +341,32 @@ arfoo
       (mark-defun)
       (iedit-mode)
       (should (= 4 (length iedit-occurrences-overlays))))))
+
+(ert-deftest iedit-transtient-sensitive-test ()
+  (with-iedit-test-fixture
+"a
+(defun foo (foo bar foo)
+\"foo bar foobar\" nil)
+(defun bar (bar foo bar)
+  \"bar foo barfoo\" nil)"
+   (lambda ()
+      (iedit-mode)
+      (emacs-lisp-mode)
+      (setq iedit-transtient-mark-sensitive t)
+      (transient-mark-mode -1)
+      (goto-char 5)
+      (iedit-mode)
+      (iedit-restrict-defun)
+      (should (= 1 (length iedit-occurrences-overlays)))
+      (iedit-mode)
+      (goto-char 13)
+      (iedit-mode 0)
+      (should (= 4 (length iedit-occurrences-overlays)))
+      (iedit-mode)
+      (iedit-mode)
+      (mark-defun)
+      (iedit-mode)
+      (should (= 0 (length iedit-occurrences-overlays))))))
 
 
 (defvar iedit-printable-test-lists
