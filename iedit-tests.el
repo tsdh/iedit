@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-03-03 14:43:39 Victor Ren>
+;; Time-stamp: <2012-03-03 17:27:58 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.94
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -71,9 +71,31 @@
      (forward-line 2)
      (iedit-mode)
      (should (= 2 (length iedit-occurrences-overlays)))
+     (should (string= iedit-initial-string-local "foo"))
      (iedit-mode)
      (should (null iedit-occurrences-overlays)))))
 
+(ert-deftest iedit-mode-with-region-test ()
+  (with-iedit-test-fixture
+"foobar
+ foo
+ foo
+ bar
+foo"
+   (lambda ()
+     (iedit-mode)
+     (goto-char 1)
+     (set-mark-command nil)
+     (forward-char 3)
+     (iedit-mode)
+     (should (= 4 (length iedit-occurrences-overlays)))
+     (should (string= iedit-initial-string-local "foo"))
+     (should (null iedit-only-complete-symbol-local))
+     (goto-char 1)
+     (set-mark-command nil)
+     (forward-line 3)
+     (iedit-mode 4)
+     (should (= 1 (length iedit-occurrences-overlays))))))
 (ert-deftest iedit-mode-start-from-isearch-test ()
   (with-iedit-test-fixture
 "foo
@@ -94,6 +116,52 @@
      (should (= 4 (length iedit-occurrences-overlays)))
      (iedit-mode)
      (should (null iedit-occurrences-overlays)))))
+
+(ert-deftest iedit-mode-last-local-occurrence-test ()
+  (with-iedit-test-fixture
+"foo
+  foo
+   barfoo
+   foo"
+   (lambda ()
+     (should (= 3 (length iedit-occurrences-overlays)))
+     (should (string= iedit-initial-string-local "foo"))
+     (iedit-mode)
+     (goto-char 15)
+     (iedit-mode 4) ; last local
+     (should (string= iedit-initial-string-local "foo"))
+     (should (= 3 (length iedit-occurrences-overlays))))))
+
+(ert-deftest iedit-mode-last-global-occurrence-test ()
+  (with-iedit-test-fixture
+"foo
+  foo
+   barfoo
+   foo"
+   (lambda ()
+     (should (= 3 (length iedit-occurrences-overlays)))
+     (should (string= iedit-initial-string-local "foo"))
+     (iedit-mode)
+     (with-temp-buffer
+       (insert "bar foo foo")
+       (goto-char 1)
+       (iedit-mode 16)
+     (should (string= iedit-initial-string-local "foo"))
+     (should (= 2 (length iedit-occurrences-overlays)))))))
+
+(ert-deftest iedit-execute-last-modification-test ()
+  (with-iedit-test-fixture
+"foo
+  foo
+   barfoo
+   foo"
+   (lambda ()
+     (should (= 3 (length iedit-occurrences-overlays)))
+     (should (string= iedit-initial-string-local "foo"))
+     (iedit-mode)
+     (with-temp-buffer
+       (insert "bar foo foo")
+       (should-error (iedit-execute-last-modification))))))
 
 (ert-deftest iedit-movement-test ()
   (with-iedit-test-fixture
@@ -134,28 +202,6 @@
      (should (= (point) 24))
      (should (string= (current-message) "Located the last occurrence."))
      )))
-
-(ert-deftest iedit-mode-with-region-test ()
-  (with-iedit-test-fixture
-"foobar
- foo
- foo
- bar
-foo"
-   (lambda ()
-     (iedit-mode)
-     (goto-char 1)
-     (set-mark-command nil)
-     (forward-char 3)
-     (iedit-mode)
-     (should (= 4 (length iedit-occurrences-overlays)))
-     (should (string= iedit-initial-string-local "foo"))
-     (should (null iedit-only-complete-symbol-local))
-     (goto-char 1)
-     (set-mark-command nil)
-     (forward-line 3)
-     (iedit-mode 4)
-     (should (= 1 (length iedit-occurrences-overlays))))))
 
 (ert-deftest iedit-occurrence-update-test ()
   (with-iedit-test-fixture
@@ -330,11 +376,11 @@ arfoo
       (emacs-lisp-mode)
       (goto-char 5)
       (iedit-mode)
-      (iedit-restrict-defun)
+      (iedit-restrict-function)
       (should (= 1 (length iedit-occurrences-overlays)))
       (iedit-mode)
       (goto-char 13)
-      (iedit-mode 0)
+      (iedit-mode-function)
       (should (= 4 (length iedit-occurrences-overlays)))
       (iedit-mode)
       (iedit-mode)
@@ -356,7 +402,7 @@ arfoo
       (transient-mark-mode -1)
       (goto-char 5)
       (iedit-mode)
-      (iedit-restrict-defun)
+      (iedit-restrict-function)
       (should (= 1 (length iedit-occurrences-overlays)))
       (iedit-mode)
       (goto-char 13)
@@ -367,7 +413,6 @@ arfoo
       (mark-defun)
       (iedit-mode)
       (should (= 0 (length iedit-occurrences-overlays))))))
-
 
 (defvar iedit-printable-test-lists
   '(("" "")

@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-03-02 15:49:40 Victor Ren>
+;; Time-stamp: <2012-03-03 17:27:33 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.95
@@ -67,7 +67,7 @@
 ;; (define-key global-map (kbd "C-;") 'iedit-mode)
 ;; (define-key isearch-mode-map (kbd "C-;") 'iedit-mode)
 ;; (define-key esc-map (kbd "C-;") 'iedit-execute-last-modification)
-;; (define-key help-map (kbd "C-;") 'iedit-mode-defun)
+;; (define-key help-map (kbd "C-;") 'iedit-mode-function)
 ;; (define-key global-map [C-return] 'iedit-rectangle-mode)
 
 ;;; todo:
@@ -144,7 +144,7 @@ For example, when invoking `iedit-mode' on the \"in\" in the
 (define-key global-map (kbd "C-;") 'iedit-mode)
 (define-key isearch-mode-map (kbd "C-;") 'iedit-mode)
 (define-key esc-map (kbd "C-;") 'iedit-execute-last-modification)
-(define-key help-map (kbd "C-;") 'iedit-mode-defun)
+(define-key help-map (kbd "C-;") 'iedit-mode-function)
 (define-key global-map [C-return] 'iedit-rectangle-mode)
 
 (defvar iedit-last-initial-string-global nil
@@ -332,7 +332,7 @@ This is like `describe-bindings', but displays only Iedit keys."
     (define-key map (kbd "M-B") 'iedit-toggle-buffering)
     (define-key map (kbd "M-<") 'iedit-first-occurrence)
     (define-key map (kbd "M->") 'iedit-last-occurrence)
-    (define-key map (kbd "M-H") 'iedit-restrict-defun)
+    (define-key map (kbd "M-H") 'iedit-restrict-function)
     (define-key map (kbd "C-?") 'iedit-help-for-occurrences)
     map)
   "Keymap used within overlays in iedit mode.")
@@ -358,7 +358,7 @@ This is like `describe-bindings', but displays only Iedit keys."
                    (substitute-command-keys "\\[iedit-toggle-buffering]") ":buffering "
                    (substitute-command-keys "\\[iedit-first-occurrence]") "/"
                    (substitute-command-keys "\\[iedit-last-occurrence]") ":first/last "
-                   (substitute-command-keys "\\[iedit-restrict-defun]") ":restrict "
+                   (substitute-command-keys "\\[iedit-restrict-function]") ":restrict "
                    (if iedit-rectangle
                        (concat
                         (substitute-command-keys "\\[iedit-kill-rectangle]") ":kill")))))
@@ -464,8 +464,8 @@ Commands:
       (iedit-start occurrence beg end))))
 
 ;;;###autoload
-(defun iedit-mode-defun ()
-  "Toggle `iedit-mode' on currenct defun."
+(defun iedit-mode-function ()
+  "Toggle `iedit-mode' on currenct function."
   (interactive)
   (iedit-mode 0))
 
@@ -501,7 +501,6 @@ Commands:
   (setq iedit-current-keymap iedit-occurrence-keymap)
   (iedit-refresh occurrence-exp beg end)
   (run-hooks 'iedit-mode-hook)
-  ;; (add-hook 'mouse-leave-buffer-hook 'iedit-done)
   (add-hook 'kbd-macro-termination-hook 'iedit-done))
 
 (defun iedit-refresh (occurrence-exp beg end)
@@ -527,8 +526,8 @@ Commands:
             (iedit-hide-unmatched-lines iedit-occurrence-context-lines)))
       (message "%d matches for \"%s\"" counter (iedit-printable occurrence-exp))
       (setq iedit-mode (propertize (concat " Iedit:" (number-to-string counter))
-                                   'face 'font-lock-warning-face))))
-  (force-mode-line-update))
+                                   'face 'font-lock-warning-face))
+      (force-mode-line-update))))
 
 (defun iedit-rectangle-start (beg end)
   "Start an iedit for the region as a rectangle."
@@ -563,16 +562,17 @@ Commands:
   (add-hook 'kbd-macro-termination-hook 'iedit-done))
 
 (defun iedit-done ()
-  "Exit iedit mode."
+  "Exit iedit mode.
+Save the current occurrence string locally and globally.  Save
+the initial string globally."
   (if iedit-buffering
       (iedit-stop-buffering))
   (when (null iedit-rectangle)
     (setq iedit-last-occurrence-local (iedit-current-occurrence-string))
-    (when (not (string= iedit-initial-string-local iedit-last-occurrence-local))
-      (setq iedit-last-occurrence-global iedit-last-occurrence-local)
-      (setq iedit-only-complete-symbol-global iedit-only-complete-symbol-local)
-      (setq iedit-last-initial-string-global iedit-initial-string-local)
-      (setq iedit-case-sensitive-global iedit-case-sensitive-local)))
+    (setq iedit-last-occurrence-global iedit-last-occurrence-local)
+    (setq iedit-only-complete-symbol-global iedit-only-complete-symbol-local)
+    (setq iedit-last-initial-string-global iedit-initial-string-local)
+    (setq iedit-case-sensitive-global iedit-case-sensitive-local))
   (remove-overlays nil nil iedit-occurrence-overlay-name t)
   (iedit-show-all)
   (setq iedit-occurrences-overlays nil)
@@ -587,7 +587,8 @@ Commands:
 (defun iedit-execute-last-modification (&optional arg)
   "Apply last modification in iedit mode to the current buffer or an active region."
   (interactive "*P")
-  (or iedit-last-initial-string-global
+  (or (and iedit-last-initial-string-global
+           (not (string= iedit-last-initial-string-global iedit-last-occurrence-global)))
       (error "No modification available"))
   (let ((occurrence-exp (regexp-quote iedit-last-initial-string-global))
         (replacement  iedit-last-occurrence-global)
@@ -598,12 +599,9 @@ Commands:
       (setq replacement (downcase replacement)))
     (if iedit-only-complete-symbol-global
         (setq occurrence-exp (concat "\\_<"  occurrence-exp "\\_>")))
-    (if (iedit-region-active)
-        (progn
+    (when (iedit-region-active)
           (setq beg (region-beginning))
           (setq end (region-end)))
-      (setq beg (point-min))
-      (setq end (point-max)))
     (perform-replace occurrence-exp replacement t t nil nil nil beg end)))
 
 (defun iedit-make-occurrence-overlay (begin end)
@@ -849,7 +847,8 @@ value of `iedit-occurrence-context-lines' is used for this time."
   "Apply last global modification."
   (interactive "*")
   (if (and iedit-last-initial-string-global
-           (string= iedit-initial-string-local iedit-last-initial-string-global))
+           (string= iedit-initial-string-local iedit-last-initial-string-global)
+           (not (string= iedit-last-initial-string-global iedit-last-occurrence-global)))
       (iedit-replace-occurrences iedit-last-occurrence-global)
     (message "No global modification available.")))
 
@@ -997,8 +996,8 @@ The behavior is the same as `kill-rectangle' in rect mode."
                     (cadr iedit-rectangle)
                     fill)))
 
-(defun iedit-restrict-defun(&optional arg)
-  "Restricting iedit mode in current defun."
+(defun iedit-restrict-function(&optional arg)
+  "Restricting iedit mode in current function."
   (interactive "P")
   (save-excursion
     (mark-defun)
