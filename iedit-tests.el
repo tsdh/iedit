@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-03-04 21:48:41 Victor Ren>
+;; Time-stamp: <2012-03-04 22:43:58 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.94
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -217,7 +217,11 @@ foo"
    barfoo
    1foo"))
      (backward-delete-char 1)
-     (should (string= (buffer-string) input-buffer-string))
+     (should (string= (buffer-string)
+"foo
+  foo
+   barfoo
+   foo"))
      (capitalize-word 1)
      (should (string= (buffer-string)
 "Foo
@@ -262,7 +266,11 @@ foo"
    barfoo
    FOO"))
      (iedit-downcase-occurrences)
-     (should (string= (buffer-string) input-buffer-string))
+     (should (string= (buffer-string)
+"foo
+  foo
+   barfoo
+   foo"))
      (iedit-replace-occurrences "bar")
      (should (string= (buffer-string)
 "bar
