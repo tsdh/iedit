@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-03-04 22:41:30 Victor Ren>
+;; Time-stamp: <2012-03-04 23:55:19 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.95
@@ -51,7 +51,7 @@
 ;; buffer lines that match the current text being edited.  This gives you the
 ;; effect of a temporary 'keep-lines' or 'occur'.  To get this effect, hit `C-'
 ;; when in Iedit mode - it toggles hiding non-matching lines.
-
+;;
 ;; Renaming refactoring is convenient in iedit mode
 ;;
 ;; - The symbol under point is selected as occurrence by default and only
@@ -59,18 +59,10 @@
 ;; - With digit prefix argument 0, only symbols in current function are matched
 ;; - Restricting symbols in current region can be done by pressing C-; again
 ;; - Last renaming refactoring is remembered and can be applied to other buffers
-;; - later
-
+;;   later
+;;
 ;; There are also some other facilities you may never think about.  Refer to the
 ;; document of function `iedit-mode' (C-h f iedit-mode RET) for more details.
-
-;;; Default key bindings:
-;;
-;; (define-key global-map (kbd "C-;") 'iedit-mode)
-;; (define-key isearch-mode-map (kbd "C-;") 'iedit-mode)
-;; (define-key esc-map (kbd "C-;") 'iedit-execute-last-modification)
-;; (define-key help-map (kbd "C-;") 'iedit-mode-on-function)
-;; (define-key global-map [C-return] 'iedit-rectangle-mode)
 
 ;;; todo:
 ;; - Add more easy access keys for whole occurrence
@@ -143,6 +135,7 @@ For example, when invoking `iedit-mode' on the \"in\" in the
     (nconc minor-mode-alist
            (list '(iedit-mode iedit-mode))))
 
+;;; Default key bindings:
 (define-key global-map (kbd "C-;") 'iedit-mode)
 (define-key isearch-mode-map (kbd "C-;") 'iedit-mode)
 (define-key esc-map (kbd "C-;") 'iedit-execute-last-modification)
@@ -220,7 +213,7 @@ current mode is iedit-rect. Otherwise it is nil.
 \(car iedit-rectangle) is the top-left corner and
 \(cadr iedit-rectangle) is the bottom-right corner" )
 
-(defvar iedit-current-keymap nil
+(defvar iedit-current-keymap 'iedit-occurrence-keymap
   "The current keymap, `iedit-occurrence-keymap' or `iedit-rect-keymap'.")
 
 (defvar iedit-occurrence-context-lines 1
@@ -461,7 +454,7 @@ Commands:
                (setq complete-symbol t)))
             (t (error "No candidate of the occurrence, cannot enable iedit mode")))
       (setq iedit-only-complete-symbol-local complete-symbol)
-      (deactivate-mark t)
+      (set-mark nil)
       (setq iedit-case-sensitive-local iedit-case-sensitive-default)
       (iedit-start occurrence beg end))))
 
@@ -480,7 +473,7 @@ Commands:
     (if (iedit-region-active)
         (let ((beg (region-beginning))
               (end (region-end)))
-          (deactivate-mark t)
+          (set-mark nil)
           (iedit-rectangle-start beg end)))))
 
 (defun iedit-mode-on-action (&optional arg)
@@ -1080,7 +1073,7 @@ Return nil if occurrence string is empty string."
   (when iedit-buffering
     (iedit-stop-buffering))
   (setq iedit-last-occurrence-local (iedit-current-occurrence-string))
-  (deactivate-mark t)
+  (set-mark nil)
   (iedit-show-all)
   (iedit-cleanup-occurrences-overlays beg end inclusive)
   (setq iedit-rectangle nil)
