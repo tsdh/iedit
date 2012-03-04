@@ -1,4 +1,4 @@
-* Iedit - Edit multiple regions simultaneously
+* Iedit - Edit multiple regions in the same way simultaneously
 
 This package is an Emacs minor mode and allows you to edit one occurrence of
 some text in a buffer or region, and simultaneously have other occurrences
@@ -22,7 +22,7 @@ different.
 
 You can also use Iedit mode as a quick way to temporarily show only the
 buffer lines that match the current text being edited.  This gives you the
-effect of a temporary 'keep-lines' or 'occur'.  To get this effect, hit `C-'
+effect of a temporary `keep-lines' or `occur'.  To get this effect, hit C-'
 when in Iedit mode - it toggles hiding non-matching lines.
 
 Renaming refactoring is convinient in Iedit mode

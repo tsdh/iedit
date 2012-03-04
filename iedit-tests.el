@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-03-04 22:43:58 Victor Ren>
+;; Time-stamp: <2012-03-05 17:25:42 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.94
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -179,11 +179,9 @@ foo"
      (iedit-next-occurrence)
      (should (= (point) 24))
      (iedit-next-occurrence)
-     (should (= (point) 24))
-     (should (string= (current-message) "This is the last occurrence."))
+     (should (= (point) 24)) ;; (should (string= (current-message) "This is the last occurrence."))
      (iedit-next-occurrence)
-     (should (= (point) 1))
-     (should (string= (current-message) "Located the first occurrence."))
+     (should (= (point) 1)) ;; (should (string= (current-message) "Located the first occurrence."))
      (iedit-next-occurrence)
      (should (= (point) 7))
      (goto-char (point-max))
@@ -196,11 +194,9 @@ foo"
      (iedit-prev-occurrence)
      (should (= (point) 1))
      (iedit-prev-occurrence)
-     (should (= (point) 1))
-     (should (string= (current-message) "This is the first occurrence."))
+     (should (= (point) 1)) ;; (should (string= (current-message) "This is the first occurrence."))
      (iedit-prev-occurrence)
-     (should (= (point) 24))
-     (should (string= (current-message) "Located the last occurrence."))
+     (should (= (point) 24)) ;; (should (string= (current-message) "Located the last occurrence."))
      )))
 
 (ert-deftest iedit-occurrence-update-test ()
@@ -407,7 +403,7 @@ arfoo
       (should (= 1 (length iedit-occurrences-overlays)))
       (iedit-mode)
       (goto-char 13)
-      (iedit-mode-function)
+      (iedit-mode-on-function)
       (should (= 4 (length iedit-occurrences-overlays)))
       (iedit-mode)
       (iedit-mode)
