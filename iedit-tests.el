@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-03-03 17:27:58 Victor Ren>
+;; Time-stamp: <2012-03-04 21:48:41 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.94
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -38,25 +38,25 @@
 (defun with-iedit-test-fixture (input-buffer-string body)
   "iedit test fixture"
   (let ((old-transient-mark-mode transient-mark-mode)
-        (old-iedit-transtient-sensitive iedit-transtient-mark-sensitive))
+        (old-iedit-transient-sensitive iedit-transient-mark-sensitive))
     (unwind-protect
         (progn
           (with-temp-buffer
             (transient-mark-mode t)
-            (setq iedit-transtient-mark-sensitive t)
+            (setq iedit-transient-mark-sensitive t)
             (insert input-buffer-string)
             (goto-char 1)
             (iedit-mode)
             (funcall body))
           (with-temp-buffer
-            (setq iedit-transtient-mark-sensitive nil)
+            (setq iedit-transient-mark-sensitive nil)
             (transient-mark-mode -1)
             (insert input-buffer-string)
             (goto-char 1)
             (iedit-mode)
             (funcall body)))
       (transient-mark-mode old-transient-mark-mode)
-      (setq iedit-transtient-mark-sensitive old-transient-mark-mode))))
+      (setq iedit-transient-mark-sensitive old-transient-mark-mode))))
 
 (ert-deftest iedit-mode-base-test ()
   (with-iedit-test-fixture
@@ -344,6 +344,24 @@ foo"
    (iedit-rectangle-mode)
    (should (equal iedit-rectangle '(1 19))))))
 
+(ert-deftest iedit-kill-rectangle-error-test ()
+  (with-iedit-test-fixture
+"foo
+ foo
+  barfoo
+    foo"
+   (lambda ()
+   (iedit-mode)
+   (set-mark-command nil)
+   (goto-char 22)
+   (iedit-rectangle-mode)
+   (should (iedit-same-column))
+   (should (equal iedit-rectangle '(1 22)))
+   (iedit-prev-occurrence)
+   (delete-char -1)
+   (should (not (iedit-same-column)))
+   (should-error (iedit-kill-rectangle)))))
+
 (ert-deftest iedit-kill-rectangle-test ()
   (with-iedit-test-fixture
 "foo
@@ -354,7 +372,8 @@ foo"
    (iedit-mode)
    (set-mark-command nil)
    (goto-char 22)
-   (iedit-rectangle-mode )
+   (iedit-rectangle-mode)
+   (should (iedit-same-column))
    (should (equal iedit-rectangle '(1 22)))
    (iedit-kill-rectangle)
    (should (string= (buffer-string)
@@ -388,7 +407,7 @@ arfoo
       (iedit-mode)
       (should (= 4 (length iedit-occurrences-overlays))))))
 
-(ert-deftest iedit-transtient-sensitive-test ()
+(ert-deftest iedit-transient-sensitive-test ()
   (with-iedit-test-fixture
 "a
 (defun foo (foo bar foo)
@@ -398,7 +417,7 @@ arfoo
    (lambda ()
       (iedit-mode)
       (emacs-lisp-mode)
-      (setq iedit-transtient-mark-sensitive t)
+      (setq iedit-transient-mark-sensitive t)
       (transient-mark-mode -1)
       (goto-char 5)
       (iedit-mode)

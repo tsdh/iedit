@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-03-03 17:27:33 Victor Ren>
+;; Time-stamp: <2012-03-04 21:47:11 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.95
@@ -44,7 +44,8 @@
 ;; - Finish - by pressing C-; again
 ;;
 ;; This package also provides rectangle support with *visible rectangle*
-;; highlighting, which is similar with cua mode rectangle support.
+;; highlighting, which is similar with  mode rectangle support, but still
+;; quite different.
 
 ;; You can also use Iedit mode as a quick way to temporarily show only the
 ;; buffer lines that match the current text being edited.  This gives you the
@@ -52,12 +53,13 @@
 ;; when in Iedit mode - it toggles hiding non-matching lines.
 
 ;; Renaming refactoring is convenient in iedit mode
-;; - The symbol under point is selected as occurrence by default and only complete
-;;   symbols are matched
+;;
+;; - The symbol under point is selected as occurrence by default and only
+;;   complete symbols are matched
 ;; - With digit prefix argument 0, only symbols in current function are matched
 ;; - Restricting symbols in current region can be done by pressing C-; again
 ;; - Last renaming refactoring is remembered and can be applied to other buffers
-;;   later
+;; - later
 
 ;; There are also some other facilities you may never think about.  Refer to the
 ;; document of function `iedit-mode' (C-h f iedit-mode RET) for more details.
@@ -67,7 +69,7 @@
 ;; (define-key global-map (kbd "C-;") 'iedit-mode)
 ;; (define-key isearch-mode-map (kbd "C-;") 'iedit-mode)
 ;; (define-key esc-map (kbd "C-;") 'iedit-execute-last-modification)
-;; (define-key help-map (kbd "C-;") 'iedit-mode-function)
+;; (define-key help-map (kbd "C-;") 'iedit-mode-on-function)
 ;; (define-key global-map [C-return] 'iedit-rectangle-mode)
 
 ;;; todo:
@@ -122,7 +124,7 @@ For example, when invoking `iedit-mode' on the \"in\" in the
   :type 'boolean
   :group 'iedit)
 
-(defcustom iedit-transtient-mark-sensitive t
+(defcustom iedit-transient-mark-sensitive t
   "If no-nil, `iedit-mode' is sensitive to the Transient Mark mode."
   :type 'boolean
   :group 'iedit)
@@ -144,7 +146,7 @@ For example, when invoking `iedit-mode' on the \"in\" in the
 (define-key global-map (kbd "C-;") 'iedit-mode)
 (define-key isearch-mode-map (kbd "C-;") 'iedit-mode)
 (define-key esc-map (kbd "C-;") 'iedit-execute-last-modification)
-(define-key help-map (kbd "C-;") 'iedit-mode-function)
+(define-key help-map (kbd "C-;") 'iedit-mode-on-function)
 (define-key global-map [C-return] 'iedit-rectangle-mode)
 
 (defvar iedit-last-initial-string-global nil
@@ -371,7 +373,7 @@ This is like `describe-bindings', but displays only Iedit keys."
 (defun iedit-mode (&optional arg)
   "Toggle iedit mode.
 This command behaves differently, depending on the mark, point,
-prefix argument and variable `iedit-transtient-mark-sensitive'.
+prefix argument and variable `iedit-transient-mark-sensitive'.
 
 If iedit mode is off, turn iedit mode on.
 
@@ -464,8 +466,8 @@ Commands:
       (iedit-start occurrence beg end))))
 
 ;;;###autoload
-(defun iedit-mode-function ()
-  "Toggle `iedit-mode' on currenct function."
+(defun iedit-mode-on-function ()
+  "Toggle `iedit-mode' on current function."
   (interactive)
   (iedit-mode 0))
 
@@ -858,8 +860,9 @@ This function preserves case."
   (interactive "*sReplace with: ")
   (let* ((ov (iedit-find-current-occurrence-overlay))
          (offset (- (point) (overlay-start ov)))
-         (from-string (downcase (buffer-substring-no-properties (overlay-start ov)
-                                                                (overlay-end ov)))))
+         (from-string (downcase (buffer-substring-no-properties
+                                 (overlay-start ov)
+                                 (overlay-end ov)))))
     (iedit-apply-on-occurrences
      (lambda (beg end from-string to-string)
        (goto-char beg)
@@ -991,10 +994,13 @@ with a prefix argument, prompt for START-AT and FORMAT."
   "Kill the rectangle.
 The behavior is the same as `kill-rectangle' in rect mode."
   (interactive "*P")
-  (let ((inhibit-modification-hooks t))
-    (kill-rectangle (car iedit-rectangle)
-                    (cadr iedit-rectangle)
-                    fill)))
+  (or (and iedit-rectangle (iedit-same-column))
+      (error "Not a rectangle"))
+  (let ((inhibit-modification-hooks t)
+        (beg (overlay-start (car iedit-occurrences-overlays)))
+        (end (overlay-end (progn (iedit-last-occurrence)
+                                 (iedit-find-current-occurrence-overlay)))))
+    (kill-rectangle beg end fill)))
 
 (defun iedit-restrict-function(&optional arg)
   "Restricting iedit mode in current function."
@@ -1020,6 +1026,22 @@ This function is supposed to be called in overlay keymap."
             (setq found overlay)
           (setq overlays (cdr overlays)))))
     found))
+
+(defun iedit-same-column ()
+  "Return t if all occurrences are at the same column."
+  (save-excursion
+    (let ((column (progn (goto-char (overlay-start (car iedit-occurrences-overlays)))
+                         (current-column)))
+          (overlays (cdr  iedit-occurrences-overlays))
+          (same t))
+      (while (and overlays same)
+        (let ((overlay (car overlays)))
+          (if (/= (progn (goto-char (overlay-start overlay))
+                         (current-column))
+                  column)
+              (setq same nil)
+            (setq overlays (cdr overlays)))))
+      same)))
 
 ;; This function might be called out of any occurrence
 (defun iedit-current-occurrence-string ()
@@ -1061,6 +1083,7 @@ Return nil if occurrence string is empty string."
   (deactivate-mark t)
   (iedit-show-all)
   (iedit-cleanup-occurrences-overlays beg end inclusive)
+  (setq iedit-rectangle nil)
   (if iedit-unmatched-lines-invisible
       (iedit-hide-unmatched-lines iedit-occurrence-context-lines))
   (setq iedit-mode (propertize
@@ -1096,8 +1119,11 @@ STRING is already `regexp-quote'ed"
         string))))
 
 (defun iedit-region-active ()
-  "Return t if mark is active and not empty region."
-  (and (if iedit-transtient-mark-sensitive
+  "Return t if region is active and not empty.
+If variable `iedit-transient-mark-sensitive' is t, active region
+means `transient-mark-mode' is on and mark is active. Otherwise,
+it just means mark is active."
+  (and (if iedit-transient-mark-sensitive
            transient-mark-mode
          t)
        mark-active (not (equal (mark) (point)))))
