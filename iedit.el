@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-03-03 17:27:33 Victor Ren>
+;; Time-stamp: <2012-03-04 11:39:18 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region replace simultaneous
 ;; Version: 0.95
@@ -52,12 +52,13 @@
 ;; when in Iedit mode - it toggles hiding non-matching lines.
 
 ;; Renaming refactoring is convenient in iedit mode
-;; - The symbol under point is selected as occurrence by default and only complete
-;;   symbols are matched
+;;
+;; - The symbol under point is selected as occurrence by default and only
+;;   complete symbols are matched
 ;; - With digit prefix argument 0, only symbols in current function are matched
 ;; - Restricting symbols in current region can be done by pressing C-; again
 ;; - Last renaming refactoring is remembered and can be applied to other buffers
-;;   later
+;; - later
 
 ;; There are also some other facilities you may never think about.  Refer to the
 ;; document of function `iedit-mode' (C-h f iedit-mode RET) for more details.
@@ -858,8 +859,9 @@ This function preserves case."
   (interactive "*sReplace with: ")
   (let* ((ov (iedit-find-current-occurrence-overlay))
          (offset (- (point) (overlay-start ov)))
-         (from-string (downcase (buffer-substring-no-properties (overlay-start ov)
-                                                                (overlay-end ov)))))
+         (from-string (downcase (buffer-substring-no-properties
+                                 (overlay-start ov)
+                                 (overlay-end ov)))))
     (iedit-apply-on-occurrences
      (lambda (beg end from-string to-string)
        (goto-char beg)
@@ -991,10 +993,13 @@ with a prefix argument, prompt for START-AT and FORMAT."
   "Kill the rectangle.
 The behavior is the same as `kill-rectangle' in rect mode."
   (interactive "*P")
-  (let ((inhibit-modification-hooks t))
-    (kill-rectangle (car iedit-rectangle)
-                    (cadr iedit-rectangle)
-                    fill)))
+  (or (iedit-same-column)
+      (error "Not a rectangle"))
+  (let ((inhibit-modification-hooks t)
+        (beg (overlay-start (car iedit-occurrences-overlays)))
+        (end (overlay-end (progn (iedit-last-occurrence)
+                                 (iedit-find-current-occurrence-overlay)))))
+    (kill-rectangle beg end fill)))
 
 (defun iedit-restrict-function(&optional arg)
   "Restricting iedit mode in current function."
@@ -1020,6 +1025,22 @@ This function is supposed to be called in overlay keymap."
             (setq found overlay)
           (setq overlays (cdr overlays)))))
     found))
+
+(defun iedit-same-column ()
+  "Return t if all occurrences are at the same column."
+  (save-excursion
+    (let ((column (progn (goto-char (overlay-start (car iedit-occurrences-overlays)))
+                         (current-column)))
+          (overlays (cdr  iedit-occurrences-overlays))
+          (same t))
+      (while (and overlays same)
+        (let ((overlay (car overlays)))
+          (if (/= (progn (goto-char (overlay-start overlay))
+                         (current-column))
+                  column)
+              (setq same nil)
+            (setq overlays (cdr overlays)))))
+      same)))
 
 ;; This function might be called out of any occurrence
 (defun iedit-current-occurrence-string ()

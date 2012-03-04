@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-03-03 17:27:58 Victor Ren>
+;; Time-stamp: <2012-03-04 11:35:50 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.94
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -344,6 +344,24 @@ foo"
    (iedit-rectangle-mode)
    (should (equal iedit-rectangle '(1 19))))))
 
+(ert-deftest iedit-kill-rectangle-error-test ()
+  (with-iedit-test-fixture
+"foo
+ foo
+  barfoo
+    foo"
+   (lambda ()
+   (iedit-mode)
+   (set-mark-command nil)
+   (goto-char 22)
+   (iedit-rectangle-mode)
+   (should (iedit-same-column))
+   (should (equal iedit-rectangle '(1 22)))
+   (iedit-prev-occurrence)
+   (delete-char -1)
+   (should (not (iedit-same-column)))
+   (should-error (iedit-kill-rectangle)))))
+
 (ert-deftest iedit-kill-rectangle-test ()
   (with-iedit-test-fixture
 "foo
@@ -354,7 +372,8 @@ foo"
    (iedit-mode)
    (set-mark-command nil)
    (goto-char 22)
-   (iedit-rectangle-mode )
+   (iedit-rectangle-mode)
+   (should (iedit-same-column))
    (should (equal iedit-rectangle '(1 22)))
    (iedit-kill-rectangle)
    (should (string= (buffer-string)
