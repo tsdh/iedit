@@ -26,10 +26,14 @@ effect of a temporary `keep-lines' or `occur'.  To get this effect, hit C-'
 when in Iedit mode - it toggles hiding non-matching lines.
 
 Renaming refactoring is convinient in Iedit mode
+
  - The symbol under point is selected as occurrence by default and only complete
-  symbols are matched
- - With digit prefix argument 0, only symbols in current function are matched
+   symbols are matched
+
+ - With digit prefix argument 0, only occurrences in current function are matched
+
  - Restricting symbols in current region can be done by pressing C-; again
+
  - Last renaming refactoring is remembered and can be applied to other buffers
    later
 
