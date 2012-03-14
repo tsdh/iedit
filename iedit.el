@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-03-06 23:10:57 Victor Ren>
+;; Time-stamp: <2012-03-14 23:00:29 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.95
@@ -28,8 +28,8 @@
 ;;; Commentary:
 
 ;; This package is an Emacs minor mode and allows you to edit one occurrence of
-;; some text in a buffer or region, and simultaneously have other occurrences
-;; edited in the same way.
+;; some text in a buffer (possibly narrowed) or region, and simultaneously have
+;; other occurrences edited in the same way.
 ;;
 ;; Normal scenario of iedit-mode is like:
 ;;
@@ -375,8 +375,9 @@ prefix argument and variable `iedit-transient-mark-sensitive'.
 If Iedit mode is off, turn Iedit mode on.
 
 When Iedit mode is turned on, all the occurrences of the current
-region are highlighted.  If one occurrence is modified, the
-change are propagated to all other occurrences simultaneously.
+region in the buffer (possibly narrowed) or a region are
+highlighted.  If one occurrence is modified, the change are
+propagated to all other occurrences simultaneously.
 
 If region is not active, the current symbol (returns from
 `current-word') is used as the occurrence by default.  The

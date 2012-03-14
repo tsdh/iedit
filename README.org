@@ -1,8 +1,8 @@
 * Iedit - Edit multiple regions in the same way simultaneously
 
 This package is an Emacs minor mode and allows you to edit one occurrence of
-some text in a buffer or region, and simultaneously have other occurrences
-edited in the same way, with visual feedback as you type.
+some text in a buffer (possibly narrowed) or region, and simultaneously have
+other occurrences edited in the same way, with visual feedback as you type.
 
 Normal scenario of Iedit mode is like:
 
