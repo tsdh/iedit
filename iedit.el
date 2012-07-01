@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-07-01 17:04:39 Victor Ren>
+;; Time-stamp: <2012-07-01 17:21:37 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.95
@@ -143,7 +143,7 @@ For example, when invoking command `iedit-mode' on the \"in\" in the
 (define-key global-map (kbd "C-;") 'iedit-mode)
 (define-key isearch-mode-map (kbd "C-;") 'iedit-mode)
 (define-key esc-map (kbd "C-;") 'iedit-execute-last-modification)
-(define-key help-map (kbd "C-;") 'iedit-mode-on-function)
+(define-key help-map (kbd "C-;") 'iedit-mode-toggle-on-function)
 (define-key global-map [C-return] 'iedit-rectangle-mode)
 
 (defvar iedit-last-initial-string-global nil
@@ -461,7 +461,7 @@ Commands:
       (iedit-start occurrence beg end))))
 
 ;;;###autoload
-(defun iedit-mode-on-function ()
+(defun iedit-mode-toggle-on-function ()
   "Toggle Iedit mode on current function."
   (interactive)
   (iedit-mode 0))
@@ -479,7 +479,7 @@ Commands:
           (iedit-rectangle-start beg end)))))
 
 (defun iedit-mode-on-action (&optional arg)
-  "Turn off Iedit mode or restrict it in a region."
+  "Turn off Iedit mode or restrict it in a region if region is active."
   (if (iedit-region-active)
       ;; Restrict iedit-mode
       (let ((beg (region-beginning))
@@ -677,8 +677,8 @@ occurrence, it will exit Iedit mode."
                 (if (eq 0 change)
                     (dolist (another-occurrence (remove occurrence iedit-occurrences-overlays))
                       (progn
-                        (let ((beginning (+ (overlay-start another-occurrence) offset))
-                              (ending (+ beginning (- end beg))))
+                        (let* ((beginning (+ (overlay-start another-occurrence) offset))
+                               (ending (+ beginning (- end beg))))
                           (goto-char beginning)
                           (insert-and-inherit value)
                           ;; todo: reconsider this change
