@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-03-14 23:00:29 Victor Ren>
+;; Time-stamp: <2012-07-01 17:04:39 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.95
@@ -677,8 +677,22 @@ occurrence, it will exit Iedit mode."
                 (if (eq 0 change)
                     (dolist (another-occurrence (remove occurrence iedit-occurrences-overlays))
                       (progn
-                        (goto-char (+ (overlay-start another-occurrence) offset))
-                        (insert-and-inherit value)))
+                        (let ((beginning (+ (overlay-start another-occurrence) offset))
+                              (ending (+ beginning (- end beg))))
+                          (goto-char beginning)
+                          (insert-and-inherit value)
+                          ;; todo: reconsider this change
+                          ;; Quick fix for multi-occur  occur-edit-mode:
+                          ;; multi-occur depend on after-change-functions to
+                          ;; update original buffer. Since
+                          ;; inhibit-modification-hooks is set to non-nil,
+                          ;; after-change-functions hooks are not going to be
+                          ;; called for the changes of other occurrences.
+                          ;; So run the hook here.
+                          (run-hook-with-args 'after-change-functions
+                                              beginning
+                                              ending
+                                              change))))
                   ;; deletion
                   (dolist (another-occurrence (remove occurrence iedit-occurrences-overlays))
                     (let* ((beginning (+ (overlay-start another-occurrence) offset))
@@ -686,7 +700,11 @@ occurrence, it will exit Iedit mode."
                       (delete-region beginning ending)
                       (unless (eq beg end) ;; replacement
                         (goto-char beginning)
-                        (insert-and-inherit value)))))))))))))
+                        (insert-and-inherit value))
+                      (run-hook-with-args 'after-change-functions
+                                          beginning
+                                          ending
+                                          change))))))))))))
 
 (defun iedit-next-occurrence ()
   "Move forward to the next occurrence in the `iedit'.
