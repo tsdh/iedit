@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-07-03 15:00:38 Victor Ren>
+;; Time-stamp: <2012-07-03 22:34:00 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.95
@@ -500,7 +500,8 @@ Commands:
   (setq iedit-current-keymap iedit-occurrence-keymap)
   (iedit-refresh occurrence-exp beg end)
   (run-hooks 'iedit-mode-hook)
-  (add-hook 'kbd-macro-termination-hook 'iedit-done))
+  (add-hook 'kbd-macro-termination-hook 'iedit-done nil t)
+  (add-hook 'change-major-mode-hook 'iedit-done nil t))
 
 (defun iedit-refresh (occurrence-exp beg end)
   "Refresh Iedit mode."
@@ -558,7 +559,8 @@ Commands:
                     'face 'font-lock-warning-face))
   (force-mode-line-update)
   (run-hooks 'iedit-mode-hook)
-  (add-hook 'kbd-macro-termination-hook 'iedit-done))
+  (add-hook 'kbd-macro-termination-hook 'iedit-done nil t)
+  (add-hook 'change-major-mode-hook 'iedit-done nil t))
 
 (defun iedit-done ()
   "Exit Iedit mode.
@@ -580,7 +582,8 @@ the initial string globally."
   (setq iedit-before-modification-undo-list nil)
   (setq iedit-mode nil)
   (force-mode-line-update)
-  (remove-hook 'kbd-macro-termination-hook 'iedit-done)
+  (remove-hook 'kbd-macro-termination-hook 'iedit-done t)
+  (remove-hook 'change-major-mode-hook 'iedit-done t)
   (run-hooks 'iedit-mode-end-hook))
 
 (defun iedit-execute-last-modification (&optional arg)
