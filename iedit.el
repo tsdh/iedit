@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-07-01 17:21:37 Victor Ren>
+;; Time-stamp: <2012-07-03 15:00:38 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.95
@@ -422,7 +422,9 @@ Commands:
       (iedit-mode-on-action arg)
     (let (occurrence
           complete-symbol
-          (beg (point-min))
+          (beg (if (eq major-mode 'occur-edit-mode) ; skip the first occurrence
+                   (next-single-char-property-change 1 'read-only)
+                 (point-min)))
           (end (point-max)))
       (cond ((and arg
                   (= 4 (prefix-numeric-value arg))
@@ -715,7 +717,7 @@ beginning of the buffer."
   (let ((pos (point))
         (in-occurrence (get-char-property (point) 'iedit-occurrence-overlay-name)))
     (when in-occurrence
-      (setq pos  (next-single-char-property-change pos 'iedit-occurrence-overlay-name)))
+      (setq pos (next-single-char-property-change pos 'iedit-occurrence-overlay-name)))
     (setq pos (next-single-char-property-change pos 'iedit-occurrence-overlay-name))
     (if (/= pos (point-max))
         (setq iedit-forward-success t)
