@@ -2,9 +2,9 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-03-05 17:25:42 Victor Ren>
+;; Time-stamp: <2012-07-09 11:01:56 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
-;; Version: 0.94
+;; Version: 0.97
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
 
 ;; This file is not part of GNU Emacs, but it is distributed under
@@ -288,6 +288,22 @@ foo"
    (lambda ()
      (iedit-blank-occurrences)
      (should (string= (buffer-string) "        barfoo    ")))))
+
+(ert-deftest iedit-blank-occurrences-rectangle-test ()
+  "Test functions deal with the whole occurrences"
+  (with-iedit-test-fixture
+"foo
+ foo barfoo foo"
+   (lambda ()
+     (iedit-mode) ; turn off iedit
+     (goto-char 2)
+     (set-mark-command nil)
+     (forward-char 1)
+     (forward-line 1)
+     (iedit-rectangle-mode)
+     (iedit-blank-occurrences)
+     (should (string= (buffer-string) "f o
+  oo barfoo foo")))))
 
 (ert-deftest iedit-delete-occurrences-test ()
   "Test functions deal with the whole occurrences"

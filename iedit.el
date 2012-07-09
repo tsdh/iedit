@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-07-04 10:07:47 Victor Ren>
+;; Time-stamp: <2012-07-09 10:45:56 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -365,6 +365,7 @@ This is like `describe-bindings', but displays only Iedit keys."
 (or (assq 'iedit-mode minor-mode-map-alist)
     (setq minor-mode-map-alist
           (cons (cons 'iedit-mode iedit-mode-map) minor-mode-map-alist)))
+
 ;; Avoid to restore Iedit mode when restoring desktop
 (add-to-list 'desktop-minor-mode-handlers
              '(iedit-mode . nil))
@@ -896,8 +897,14 @@ This function preserves case."
   "Replace occurrences with blank spaces."
   (interactive "*")
   (let* ((ov (car iedit-occurrences-overlays))
+         (offset (- (point) (overlay-start ov)))
          (count (- (overlay-end ov) (overlay-start ov))))
-    (iedit-replace-occurrences (make-string count 32))))
+    (iedit-apply-on-occurrences
+     (lambda (beg end )
+       (delete-region beg end)
+       (goto-char beg)
+       (insert-and-inherit (make-string count 32))))
+    (goto-char (+ (overlay-start ov) offset))))
 
 (defun iedit-delete-occurrences()
   "Delete occurrences."
