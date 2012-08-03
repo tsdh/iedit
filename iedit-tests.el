@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-09 16:05:26 Victor Ren>
+;; Time-stamp: <2012-08-09 17:06:18 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.97
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -29,6 +29,7 @@
 
 ;;; Code:
 (require 'ert)
+(require 'iedit)
 
 (ert-deftest iedit-compile-test ()
   (let ((byte-compile-error-on-warn t ))
@@ -264,6 +265,19 @@ foo"
    barfoo
    1")))))
 
+(ert-deftest iedit-aborting-test ()
+  (with-iedit-test-fixture
+"foo
+  foo
+   barfoo
+   foo"
+   (lambda ()
+     (kill-region (point) (+ 4 (point)))
+     (should (string= (buffer-string)
+"  foo
+   barfoo
+   foo")))))
+
 (ert-deftest iedit-toggle-case-sensitive-test ()
   (with-iedit-test-fixture
 "foo
@@ -310,7 +324,6 @@ foo"
   2 bar
    barfoo
    3 bar")))))
-
 
 (ert-deftest iedit-blank-occurrences-test ()
   "Test functions deal with the whole occurrences"
@@ -478,7 +491,7 @@ arfoo
       (goto-char 13)
       (iedit-mode 0)
       (should (= 4 (length iedit-occurrences-overlays)))
-      (iedit-mode)
+      (iedit-mode) ;;turn off iedit mode
       (iedit-mode)
       (mark-defun)
       (iedit-mode)
