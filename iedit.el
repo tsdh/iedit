@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-07-09 10:45:56 Victor Ren>
+;; Time-stamp: <2012-08-06 10:14:44 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -945,10 +945,12 @@ be applied to other occurrences when buffering is off."
   (setq iedit-buffering t)
   (setq iedit-before-modification-string (iedit-current-occurrence-string))
   (setq iedit-before-modification-undo-list buffer-undo-list)
-  (setq iedit-mode (propertize
-                    (concat " Iedit-B:" (number-to-string (length iedit-occurrences-overlays)))
-                    'face 'font-lock-warning-face))
-  (force-mode-line-update))
+  (message "Start buffering editing...")
+  ;; (setq iedit-mode (propertize
+  ;;                   (concat " Iedit-B:" (number-to-string (length iedit-occurrences-overlays)))
+  ;;                   'face 'font-lock-warning-face))
+  ;; (force-mode-line-update)
+  )
 
 (defun iedit-stop-buffering ()
   "Stop buffering and apply the modification to other occurrences.
@@ -977,11 +979,12 @@ modification is not going to be applied to other occurrences."
                   (insert-and-inherit modified-string)))))
           (goto-char (+ (overlay-start ov) offset))))))
   (setq iedit-buffering nil)
-  (setq iedit-mode (propertize
-                    (concat (if iedit-rectangle " Iedit-RECT:" " Iedit:")
-                            (number-to-string (length iedit-occurrences-overlays)))
-                    'face 'font-lock-warning-face))
-  (force-mode-line-update)
+  ;; (setq iedit-mode (propertize
+  ;;                   (concat (if iedit-rectangle " Iedit-RECT:" " Iedit:")
+  ;;                           (number-to-string (length iedit-occurrences-overlays)))
+  ;;                   'face 'font-lock-warning-face))
+  ;; (force-mode-line-update)
+  (message "Buffered modification applied.")
   (setq iedit-before-modification-undo-list nil))
 
 (defvar iedit-number-line-counter 1
