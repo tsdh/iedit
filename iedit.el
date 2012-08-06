@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-09 17:04:37 Victor Ren>
+;; Time-stamp: <2012-08-09 17:08:52 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -111,6 +111,8 @@ For example, when invoking command `iedit-mode' on the \"in\" in the
 (defvar iedit-mode-end-hook nil
   "Function(s) to call after terminating an iedit.")
 
+(defvar iedit-mode nil) ;; Name of the minor mode
+
 (defvar iedit-only-complete-symbol-local nil
   "This is buffer local variable which indicates the occurrence
 only matches complete symbol.")
@@ -119,17 +121,23 @@ only matches complete symbol.")
   "This is global variable which indicates the last global occurrence
 only matches complete symbol.")
 
+(defvar iedit-last-occurrence-local nil
+  "This is buffer local variable which is the occurrence when
+Iedit mode is turned off last time.")
 
-(defvar iedit-mode-hook nil
-  "Function(s) to call after starting up an iedit.")
+(defvar iedit-last-occurrence-global nil
+  "This is global variable which is the occurrence when
+Iedit mode is turned off last time.")
 
-(defvar iedit-mode-end-hook nil
-  "Function(s) to call after terminating an iedit.")
+(defvar iedit-last-initial-string-global nil
+  "This is a global variable which is the last initial occurrence string.")
 
-(defvar iedit-mode nil) ;; Name of the minor mode
+(defvar iedit-initial-string-local nil
+  "This is buffer local variable which is the initial string to start Iedit mode.")
 
 (make-variable-buffer-local 'iedit-mode)
 (make-variable-buffer-local 'iedit-only-complete-symbol-local)
+(make-variable-buffer-local 'iedit-last-occurrence-local)
 
 (or (assq 'iedit-mode minor-mode-alist)
     (nconc minor-mode-alist
@@ -156,7 +164,7 @@ only matches complete symbol.")
 
 (defvar iedit-mode-keymap
   (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map iedit-occurrence-keymap-default)
+    (set-keymap-parent map iedit-occurrence-keymap)
     (define-key map (kbd "M-H") 'iedit-restrict-function)
     (define-key map (kbd "M-C") 'iedit-toggle-case-sensitive)
     map)
@@ -281,6 +289,20 @@ Commands:
   (add-hook 'change-major-mode-hook 'iedit-done nil t)
   (add-hook 'iedit-aborting-hook 'iedit-done nil t))
 
+(defun iedit-refresh (occurrence-exp beg end)
+  "Refresh Iedit mode."
+  (setq occurrence-exp (regexp-quote occurrence-exp))
+  (when iedit-only-complete-symbol-local
+    (setq occurrence-exp (concat "\\_<" occurrence-exp "\\_>")))
+  (setq iedit-mode
+        (propertize
+         (concat " Iedit:"
+                 (number-to-string
+                  (iedit-make-occurrences-overlays occurrence-exp beg end)))
+         'face
+         'font-lock-warning-face))
+  (force-mode-line-update))
+
 (defun iedit-done ()
   "Exit Iedit mode.
 Save the current occurrence string locally and globally.  Save
@@ -300,20 +322,6 @@ the initial string globally."
   (remove-hook 'change-major-mode-hook 'iedit-done t)
   (remove-hook 'iedit-aborting-hook 'iedit-done t)
   (run-hooks 'iedit-mode-end-hook))
-
-(defun iedit-refresh (occurrence-exp beg end)
-  "Refresh Iedit mode."
-  (setq occurrence-exp (regexp-quote occurrence-exp))
-  (when iedit-only-complete-symbol-local
-    (setq occurrence-exp (concat "\\_<" occurrence-exp "\\_>")))
-  (setq iedit-mode
-        (propertize
-         (concat " Iedit:"
-                 (number-to-string
-                  (iedit-make-occurrences-overlays occurrence-exp beg end)))
-         'face
-         'font-lock-warning-face))
-  (force-mode-line-update))
 
 (defun iedit-mode-on-action (&optional arg)
   "Turn off Iedit mode or restrict it in a region if region is active."
@@ -410,4 +418,3 @@ Todo: how about region"
 ;;  LocalWords:  iso lefttab backtab upcase downcase concat setq autoload arg
 ;;  LocalWords:  refactoring propertize cond goto nreverse progn rotatef eq elp
 ;;  LocalWords:  dolist pos unmatch args ov sReplace iedit's cdr quote'ed
->>>>>>> Split iedit into three files: iedit.el, iedit-lib.el, iedit-rect.el

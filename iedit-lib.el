@@ -1,9 +1,9 @@
-;;; iedit-lib.el --- library for editting multiple regions in the same way
+;;; iedit-lib.el --- APIs for editting multiple regions in the same way
 ;;; simultaneously.
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-02 22:51:38 Victor Ren>
+;; Time-stamp: <2012-08-06 10:04:46 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -28,9 +28,11 @@
 
 ;;; Commentary:
 
-;; This package is APIs library that allow you to write your own code.
+;; This package is APIs library that allow you to write your own minor mode.
 
 ;;; todo:
+;; - Update comments for APIs
+;; - Fix the problem of tow conjected occurences
 ;; - Add more easy access keys for whole occurrence
 ;; - More APIs: extend occurrences, add-next, add previous, add region
 
@@ -65,12 +67,6 @@
   :type 'boolean
   :group 'iedit)
 
-(defvar iedit-last-initial-string-global nil
-  "This is a global variable which is the last initial occurrence string.")
-
-(defvar iedit-initial-string-local nil
-  "This is buffer local variable which is the initial string to start Iedit mode.")
-
 (defvar iedit-occurrences-overlays nil
   "The occurrences slot contains a list of overlays used to
 indicate the position of each occurrence.  In addition, the
@@ -88,14 +84,6 @@ If no-nil, matching is case sensitive.")
 (defvar iedit-unmatched-lines-invisible nil
   "This is buffer local variable which indicates whether
 unmatched lines are hided.")
-
-(defvar iedit-last-occurrence-local nil
-  "This is buffer local variable which is the occurrence when
-Iedit mode is turned off last time.")
-
-(defvar iedit-last-occurrence-global nil
-  "This is global variable which is the occurrence when
-Iedit mode is turned off last time.")
 
 (defvar iedit-forward-success t
   "This is buffer local variable which indicates the moving
@@ -125,8 +113,8 @@ insertion against a zero-width occurrence.")
 buffering, which means the modification to the current occurrence
 is not applied to other occurrences when it is true.")
 
-(defvar iedit-occurrence-keymap 'iedit-occurrence-keymap-default
-  "The current keymap, `iedit-occurrence-keymap'")
+;; (defvar iedit-occurrence-keymap 'iedit-occurrence-keymap
+;;   "The current keymap, `iedit-occurrence-keymap'")
 
 (defvar iedit-occurrence-context-lines 1
   "The number of lines before or after the occurrence.")
@@ -134,14 +122,13 @@ is not applied to other occurrences when it is true.")
 (make-variable-buffer-local 'iedit-occurrences-overlays)
 (make-variable-buffer-local 'iedit-unmatched-lines-invisible)
 (make-variable-buffer-local 'iedit-case-sensitive-local)
-(make-variable-buffer-local 'iedit-last-occurrence-local)
 (make-variable-buffer-local 'iedit-forward-success)
 (make-variable-buffer-local 'iedit-before-modification-string)
 (make-variable-buffer-local 'iedit-before-modification-undo-list)
 (make-variable-buffer-local 'iedit-skipped-modification-once)
 (make-variable-buffer-local 'iedit-aborting)
 (make-variable-buffer-local 'iedit-buffering)
-(make-variable-buffer-local 'iedit-occurrence-keymap)
+;; (make-variable-buffer-local 'iedit-occurrence-keymap)
 (make-variable-buffer-local 'iedit-occurrence-context-lines)
 
 (defconst iedit-occurrence-overlay-name 'iedit-occurrence-overlay-name)
@@ -217,7 +204,7 @@ This is like `describe-bindings', but displays only Iedit keys."
     map)
   "Keymap used while Iedit mode is enabled.")
 
-(defvar iedit-occurrence-keymap-default
+(defvar iedit-occurrence-keymap
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map iedit-lib-keymap)
     (define-key map (kbd "M-U") 'iedit-upcase-occurrences)
@@ -234,9 +221,8 @@ This is like `describe-bindings', but displays only Iedit keys."
     map)
   "Keymap used within overlays in Iedit mode.")
 
-
 (defun iedit-help-for-occurrences ()
-  "Display `iedit-occurrence-keymap-default'"
+  "Display `iedit-occurrence-keymap'"
   (interactive)
   (message (concat (substitute-command-keys "\\[iedit-upcase-occurrences]") "/"
                    (substitute-command-keys "\\[iedit-downcase-occurrences]") ":up/downcase "
@@ -251,7 +237,8 @@ This is like `describe-bindings', but displays only Iedit keys."
                    )))
 
 (defun iedit-make-occurrences-overlays (occurrence-exp beg end)
-  "Refresh Iedit mode."
+  "Create occurrence overlays for `occurrence-exp' in a region.
+Return the number of occurrences."
   (setq iedit-aborting nil)
   (setq iedit-occurrences-overlays nil)
   ;; Find and record each occurrence's markers and add the overlay to the occurrences
@@ -270,8 +257,29 @@ This is like `describe-bindings', but displays only Iedit keys."
             (iedit-hide-unmatched-lines iedit-occurrence-context-lines))))
     counter))
 
+(defun iedit-add-region-as-occurrence (beg end)
+  "Add region as an occurrence.
+The length of the region must the same as other occurrences if
+there are."
+  (or (= beg end)
+      (error "No region"))
+  (if (null iedit-occurrences-overlays)
+      (push
+       (iedit-make-occurrence-overlay beg end)
+       iedit-occurrences-overlays)
+    (or (= (- end beg) (iedit-occurrence-string-length))
+        (error "Wrong region."))
+    (if (or (iedit-find-overlay-at-point beg 'iedit-occurrence-overlay-name)
+            (iedit-find-overlay-at-point end 'iedit-occurrence-overlay-name))
+        (error "Conflict region."))
+    (push (iedit-make-occurrence-overlay beg end)
+          iedit-occurrences-overlays)
+    (sort iedit-occurrences-overlays
+          (lambda (left right)
+            (< (overlay-start left) (overlay-start right)))))) ;; todo test this function
+
 (defun iedit-clearup ()
-  "clear up"
+  "Clear up occurrence overlay, invisible overlay and local variables."
   ;; (when iedit-buffering
   ;;     (iedit-stop-buffering))
   ;; (setq iedit-last-occurrence-local (iedit-current-occurrence-string))
@@ -333,7 +341,7 @@ This modification hook is triggered when a user edits any
 occurrence and is responsible for updating all other occurrences.
 Current supported edits are insertion, yank, deletion and
 replacement.  If this modification is going out of the
-occurrence, it will exit Iedit mode."
+occurrence, it will abort Iedit mode."
   (when (and (not iedit-aborting )
              (not undo-in-progress)) ; undo will do all the update
     ;; before modification
@@ -506,7 +514,8 @@ value of `iedit-occurrence-context-lines' is used for this time."
   (remove-overlays nil nil iedit-invisible-overlay-name t))
 
 (defun iedit-hide-unmatched-lines (context-lines)
-  "Hide unmatched lines using invisible overlay."
+  "Hide unmatched lines using invisible overlay.
+This function depends on the order of iedit-occurrences-overlays. TODO"
   (let ((prev-occurrence-end 1)
         (unmatched-lines nil))
     (save-excursion
@@ -535,7 +544,7 @@ value of `iedit-occurrence-context-lines' is used for this time."
          (end (overlay-end ov)))
     (let ((inhibit-modification-hooks t))
       (save-excursion
-        (dolist (occurrence  iedit-occurrences-overlays)
+        (dolist (occurrence iedit-occurrences-overlays)
           (apply function (overlay-start occurrence) (overlay-end occurrence) args))))))
 
 (defun iedit-upcase-occurrences ()
@@ -725,6 +734,11 @@ Return nil if occurrence string is empty string."
     (if (and ov (/=  beg end))
         (buffer-substring-no-properties beg end)
       nil)))
+
+(defun iedit-occurrence-string-length ()
+  "Return the length of current occurrence string."
+  (let (ov (car iedit-occurrences-overlays))
+    (- (overlay-end ov) (overlay-start ov))))
 
 (defun iedit-find-overlay (beg end property &optional exclusive)
   "Return a overlay with property in region, or out of the region if EXCLUSIVE is not nil."

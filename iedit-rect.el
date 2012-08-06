@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-02 22:57:04 Victor Ren>
+;; Time-stamp: <2012-08-06 08:42:23 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -69,7 +69,7 @@ current mode is iedit-rect. Otherwise it is nil.
 ;;; Define Iedit rect mode map
 (defvar iedit-rect-keymap
   (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map iedit-occurrence-keymap-default)
+    (set-keymap-parent map iedit-occurrence-keymap)
     (define-key map (kbd "M-K") 'iedit-kill-rectangle)
     map)
   "Keymap used within overlays in iedit-RECT mode.")
@@ -96,26 +96,12 @@ current mode is iedit-rect. Otherwise it is nil.
           (set-mark nil)
           (iedit-rectangle-start beg end)))))
 
-(defun iedit-rectangle-done ()
-  "Exit Iedit mode.
-Save the current occurrence string locally and globally.  Save
-the initial string globally."
-  (when iedit-buffering
-      (iedit-stop-buffering))
-  (iedit-clearup)
-  (setq iedit-rectangle-mode nil)
-  (force-mode-line-update)
-  (remove-hook 'kbd-macro-termination-hook 'iedit-rectangle-done t)
-  (remove-hook 'change-major-mode-hook 'iedit-rectangle-done t)
-  (remove-hook 'iedit-aborting-hook 'iedit-rectangle-done t))
-
 (defun iedit-rectangle-start (beg end)
   "Start Iedit mode for the region as a rectangle."
   (barf-if-buffer-read-only)
   (setq iedit-occurrences-overlays nil)
   (setq iedit-rectangle (list beg end))
   (setq iedit-initial-string-local nil)
-  (setq iedit-occurrence-keymap iedit-rect-keymap)
   (save-excursion
     (let ((beg-col (progn (goto-char beg) (current-column)))
           (end-col (progn (goto-char end) (current-column))))
@@ -142,6 +128,18 @@ the initial string globally."
   (add-hook 'change-major-mode-hook 'iedit-rectangle-done nil t)
   (add-hook 'iedit-aborting-hook 'iedit-rectangle-done nil t))
 
+(defun iedit-rectangle-done ()
+  "Exit Iedit mode.
+Save the current occurrence string locally and globally.  Save
+the initial string globally."
+  (when iedit-buffering
+      (iedit-stop-buffering))
+  (iedit-clearup)
+  (setq iedit-rectangle-mode nil)
+  (force-mode-line-update)
+  (remove-hook 'kbd-macro-termination-hook 'iedit-rectangle-done t)
+  (remove-hook 'change-major-mode-hook 'iedit-rectangle-done t)
+  (remove-hook 'iedit-aborting-hook 'iedit-rectangle-done t))
 
 (defun iedit-kill-rectangle(&optional fill)
   "Kill the rectangle.
