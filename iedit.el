@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-06 10:14:44 Victor Ren>
+;; Time-stamp: <2012-08-09 15:12:50 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -199,7 +199,7 @@ forward or backward successful")
 ;; `iedit-occurrence-update' gets called twice when change==0 and occurrence
 ;; is zero-width (beg==end)
 ;; -- for front and back insertion.
-(defvar iedit-skipped-modification-once nil
+(defvar iedit-skip-modification-once t
   "Variable used to skip first modification hook run when
 insertion against a zero-width occurrence.")
 
@@ -231,7 +231,7 @@ current mode is iedit-rect. Otherwise it is nil.
 (make-variable-buffer-local 'iedit-forward-success)
 (make-variable-buffer-local 'iedit-before-modification-string)
 (make-variable-buffer-local 'iedit-before-modification-undo-list)
-(make-variable-buffer-local 'iedit-skipped-modification-once)
+(make-variable-buffer-local 'iedit-skip-modification-once)
 (make-variable-buffer-local 'iedit-aborting)
 (make-variable-buffer-local 'iedit-buffering)
 (make-variable-buffer-local 'iedit-rectangle)
@@ -615,6 +615,8 @@ the initial string globally."
 Add the properties for the overlay: a face used to display a
 occurrence's default value, and modification hooks to update
 occurrences if the user starts typing."
+  ;; Text inserted at the beginning and in the end is inside of the overlay.
+  ;; Conjointed occurrences might be overlapped after modification
   (let ((occurrence (make-overlay begin end (current-buffer) nil t)))
     (overlay-put occurrence iedit-occurrence-overlay-name t)
     (overlay-put occurrence 'face iedit-occurrence-face)
@@ -662,18 +664,18 @@ occurrence, it will exit Iedit mode."
             (progn (setq iedit-aborting t) ; abort iedit-mode
                    (add-hook 'post-command-hook 'iedit-reset-aborting nil t))
           (setq iedit-before-modification-string
-                (buffer-substring-no-properties beg end)))
+                (buffer-substring-no-properties beg end))
+          ;; Check if this is called twice before modification. When inserting
+          ;; into zero-width occurrence or between two conjointed occurrecnes,
+          ;; both insert-in-front-hooks and insert-behind-hooks will be
+          ;; called.  Two calls will make `iedit-skip-modification-once' true.
+          (setq iedit-skip-modification-once (not iedit-skip-modification-once)))
       ;; after modification
       (when (not iedit-buffering)
-        ;; Check if we are inserting into zero-width occurrence.  If so, then
-        ;; TWO modification hooks will be called -- "insert-in-front-hooks" and
-        ;; "insert-behind-hooks".  We need to run just once.
-        (if (and (= beg (overlay-start occurrence))
-                 (= end (overlay-end occurrence))
-                 (= change 0)
-                 (not iedit-skipped-modification-once))
-            (setq iedit-skipped-modification-once t)
-          (setq iedit-skipped-modification-once nil)
+        (if iedit-skip-modification-once
+            ;; Skip the first hook
+            (setq iedit-skip-modification-once nil)
+          (setq iedit-skip-modification-once t)
           (when (or (eq 0 change) ;; insertion
                     (eq beg end)  ;; deletion
                     (not (string= iedit-before-modification-string
@@ -684,24 +686,24 @@ occurrence, it will exit Iedit mode."
               (save-excursion
                 ;; insertion or yank
                 (if (eq 0 change)
-                    (dolist (another-occurrence (remove occurrence iedit-occurrences-overlays))
-                      (progn
-                        (let* ((beginning (+ (overlay-start another-occurrence) offset))
-                               (ending (+ beginning (- end beg))))
+                    (dolist (another-occurrence iedit-occurrences-overlays)
+                      (let* ((beginning (+ (overlay-start another-occurrence) offset))
+                             (ending (+ beginning (- end beg))))
+                        (when (not (eq another-occurrence occurrence))
                           (goto-char beginning)
                           (insert-and-inherit value)
-                          ;; todo: reconsider this change
-                          ;; Quick fix for multi-occur  occur-edit-mode:
-                          ;; multi-occur depend on after-change-functions to
-                          ;; update original buffer. Since
-                          ;; inhibit-modification-hooks is set to non-nil,
-                          ;; after-change-functions hooks are not going to be
-                          ;; called for the changes of other occurrences.
+                          ;; todo: reconsider this change Quick fix for
+                          ;; multi-occur occur-edit-mode: multi-occur depend on
+                          ;; after-change-functions to update original
+                          ;; buffer. Since inhibit-modification-hooks is set to
+                          ;; non-nil, after-change-functions hooks are not going
+                          ;; to be called for the changes of other occurrences.
                           ;; So run the hook here.
                           (run-hook-with-args 'after-change-functions
                                               beginning
                                               ending
-                                              change))))
+                                              change))
+                        (iedit-move-conjointed-overlays another-occurrence)))
                   ;; deletion
                   (dolist (another-occurrence (remove occurrence iedit-occurrences-overlays))
                     (let* ((beginning (+ (overlay-start another-occurrence) offset))
@@ -956,7 +958,8 @@ be applied to other occurrences when buffering is off."
   "Stop buffering and apply the modification to other occurrences.
 If current point is not at any occurrence, the buffered
 modification is not going to be applied to other occurrences."
-  (let ((ov (iedit-find-current-occurrence-overlay)))
+  (let ((ov (iedit-find-current-occurrence-overlay))
+        (inhibit-modification-hooks t))
     (when ov
       (let* ((beg (overlay-start ov))
              (end (overlay-end ov))
@@ -976,7 +979,8 @@ modification is not going to be applied to other occurrences."
                 (delete-region beginning ending)
                 (unless (eq beg end) ;; replacement
                   (goto-char beginning)
-                  (insert-and-inherit modified-string)))))
+                  (insert-and-inherit modified-string))
+                (iedit-move-conjointed-overlays occurrence))))
           (goto-char (+ (overlay-start ov) offset))))))
   (setq iedit-buffering nil)
   ;; (setq iedit-mode (propertize
@@ -986,6 +990,26 @@ modification is not going to be applied to other occurrences."
   ;; (force-mode-line-update)
   (message "Buffered modification applied.")
   (setq iedit-before-modification-undo-list nil))
+
+(defun iedit-move-conjointed-overlays (occurrence)
+  "This function keeps overlays conjointed after modification.
+After modification, conjointed overlays may be overlapped."
+  (let ((beginning (overlay-start occurrence))
+        (ending (overlay-end occurrence)))
+    (unless (= beginning (point-min))
+      (let ((previous-overlay (iedit-find-overlay-at-point
+                               (1- beginning)
+                               'iedit-occurrence-overlay-name)))
+        (if previous-overlay ; two conjointed occurrences
+            (move-overlay previous-overlay
+                          (overlay-start previous-overlay)
+                          beginning))))
+    (unless (= ending (point-max))
+      (let ((next-overlay (iedit-find-overlay-at-point
+                           ending
+                           'iedit-occurrence-overlay-name)))
+        (if next-overlay ; two conjointed occurrences
+            (move-overlay next-overlay ending (overlay-end next-overlay)))))))
 
 (defvar iedit-number-line-counter 1
   "Occurrence number for 'iedit-number-occurrences.")

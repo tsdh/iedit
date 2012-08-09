@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-07-09 11:01:56 Victor Ren>
+;; Time-stamp: <2012-08-09 16:05:26 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.97
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -96,6 +96,37 @@ foo"
      (forward-line 3)
      (iedit-mode 4)
      (should (= 1 (length iedit-occurrences-overlays))))))
+
+(ert-deftest iedit-move-conjointed-overlays-test ()
+  (with-iedit-test-fixture
+"foobar
+ foofoofoo
+ foofoo
+ foo"
+   (lambda ()
+     (iedit-mode)
+     (goto-char 1)
+     (set-mark-command nil)
+     (forward-char 3)
+     (iedit-mode)
+     (should (= 7 (length iedit-occurrences-overlays)))
+     (should (string= iedit-initial-string-local "foo"))
+     (should (null iedit-only-complete-symbol-local))
+     (goto-char 1)
+     (insert "123")
+     (should (string= (buffer-string)
+"123foobar
+ 123foo123foo123foo
+ 123foo123foo
+ 123foo"))
+     (forward-char 3)
+     (insert "456")
+     (should (string= (buffer-string)
+"123foo456bar
+ 123foo456123foo456123foo456
+ 123foo456123foo456
+ 123foo456")))))
+
 (ert-deftest iedit-mode-start-from-isearch-test ()
   (with-iedit-test-fixture
 "foo
