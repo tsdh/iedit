@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-10 09:26:34 Victor Ren>
+;; Time-stamp: <2012-08-10 16:18:08 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -32,7 +32,6 @@
 
 ;;; todo:
 ;; - Update comments for APIs
-;; - Fix the problem of tow conjected occurences
 ;; - Add more easy access keys for whole occurrence
 ;; - More APIs: extend occurrences, add-next, add previous, add region
 
