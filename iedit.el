@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-09 17:08:52 Victor Ren>
+;; Time-stamp: <2012-08-10 10:00:31 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -314,7 +314,7 @@ the initial string globally."
   (setq iedit-last-initial-string-global iedit-initial-string-local)
   (setq iedit-case-sensitive-global iedit-case-sensitive-local)
 
-  (iedit-clearup)
+  (iedit-cleanup)
 
   (setq iedit-mode nil)
   (force-mode-line-update)

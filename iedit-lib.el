@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-09 17:17:42 Victor Ren>
+;; Time-stamp: <2012-08-10 09:26:34 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -278,8 +278,8 @@ there are."
           (lambda (left right)
             (< (overlay-start left) (overlay-start right)))))) ;; todo test this function
 
-(defun iedit-clearup ()
-  "Clear up occurrence overlay, invisible overlay and local variables."
+(defun iedit-cleanup ()
+  "Clean up occurrence overlay, invisible overlay and local variables."
   ;; (when iedit-buffering
   ;;     (iedit-stop-buffering))
   ;; (setq iedit-last-occurrence-local (iedit-current-occurrence-string))
@@ -539,13 +539,10 @@ This function depends on the order of iedit-occurrences-overlays. TODO"
 ;;;; functions for overlay keymap
 (defun iedit-apply-on-occurrences (function &rest args)
   "Call function for each occurrence."
-  (let* ((ov (car iedit-occurrences-overlays))
-         (beg (overlay-start ov))
-         (end (overlay-end ov)))
-    (let ((inhibit-modification-hooks t))
+  (let ((inhibit-modification-hooks t))
       (save-excursion
         (dolist (occurrence iedit-occurrences-overlays)
-          (apply function (overlay-start occurrence) (overlay-end occurrence) args))))))
+          (apply function (overlay-start occurrence) (overlay-end occurrence) args)))))
 
 (defun iedit-upcase-occurrences ()
   "Covert occurrences to upper case."
@@ -625,17 +622,17 @@ be applied to other occurrences when buffering is off."
   "Stop buffering and apply the modification to other occurrences.
 If current point is not at any occurrence, the buffered
 modification is not going to be applied to other occurrences."
-  (let ((ov (iedit-find-current-occurrence-overlay))
-        (inhibit-modification-hooks t))
+  (let ((ov (iedit-find-current-occurrence-overlay)))
     (when ov
       (let* ((beg (overlay-start ov))
              (end (overlay-end ov))
              (modified-string (buffer-substring-no-properties beg end))
-             (offset (- (point) beg))) ;; delete-region moves cursor
+             (offset (- (point) beg)) ;; delete-region moves cursor
+             (inhibit-modification-hooks t))
         (when (not (string= iedit-before-modification-string modified-string))
           (save-excursion
-            ;; Rollback the current modification and buffer-undo-list. This is to
-            ;; avoid the inconsistency if user undoes modifications
+            ;; Rollback the current modification and buffer-undo-list. This is
+            ;; to avoid the inconsistency if user undoes modifications
             (delete-region beg end)
             (goto-char beg)
             (insert-and-inherit iedit-before-modification-string)
@@ -688,12 +685,13 @@ After modification, conjointed overlays may be overlapped."
                     (1- (+ (length iedit-occurrences-overlays) start-at)))))
           "d "))
 
-(defun iedit-number-occurrences (start-at &optional format)
+(defun iedit-number-occurrences (start-at &optional format-string)
   "Insert numbers in front of the occurrences.
 START-AT, if non-nil, should be a number from which to begin
 counting.  FORMAT, if non-nil, should be a format string to pass
-to `format' along with the line count.  When called interactively
-with a prefix argument, prompt for START-AT and FORMAT."
+to `format-string' along with the line count.  When called
+interactively with a prefix argument, prompt for START-AT and
+FORMAT."
   (interactive
    (if current-prefix-arg
        (let* ((start-at (read-number "Number to count from: " 1)))
@@ -702,15 +700,17 @@ with a prefix argument, prompt for START-AT and FORMAT."
                             (iedit-default-occurence-number-format
                              start-at))))
      (list  1 nil)))
-  (unless format
-    (setq format (iedit-default-occurence-number-format start-at)))
-  (let ((iedit-number-occurrence-counter start-at))
-    (iedit-apply-on-occurrences
-     (lambda (beg _end format-string)
-       (goto-char beg)
-       (insert (format format-string iedit-number-occurrence-counter))
-       (setq iedit-number-occurrence-counter
-             (1+ iedit-number-occurrence-counter))) format)))
+  (unless format-string
+    (setq format-string (iedit-default-occurence-number-format start-at)))
+  (let ((iedit-number-occurrence-counter start-at)
+        (inhibit-modification-hooks t))
+    (save-excursion
+      (dolist (occurrence iedit-occurrences-overlays)
+        (goto-char (overlay-start occurrence))
+        (insert (format format-string iedit-number-occurrence-counter))
+        (iedit-move-conjointed-overlays occurrence)
+        (setq iedit-number-occurrence-counter
+              (1+ iedit-number-occurrence-counter))))))
 
 
 ;;; help functions
