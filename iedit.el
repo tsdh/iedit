@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-10 10:00:31 Victor Ren>
+;; Time-stamp: <2012-08-10 11:13:42 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -377,7 +377,9 @@ the initial string globally."
   (interactive "P")
   (save-excursion
     (mark-defun)
-    (iedit-restrict-region (region-beginning) (region-end) arg)))
+    (iedit-restrict-region (region-beginning) (region-end) arg))
+  (message "Restricted in current function, %d matches."
+           (length iedit-occurrences-overlays)))
 
 (defun iedit-restrict-region (beg end &optional inclusive)
   "Restricting Iedit mode in a region."
