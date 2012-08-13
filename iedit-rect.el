@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-10 10:00:55 Victor Ren>
+;; Time-stamp: <2012-08-10 16:20:22 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -41,7 +41,7 @@
 ;;; Code:
 
 (eval-when-compile (require 'cl))
-(require 'rect) ;; kill rectangle
+(require 'rect) ;; kill-rectangle
 (require 'iedit-lib)
 
 (defvar iedit-rectangle-mode nil) ;; Name of the minor mode
