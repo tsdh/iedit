@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-10 16:18:08 Victor Ren>
+;; Time-stamp: <2012-08-13 11:19:08 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -677,7 +677,7 @@ After modification, conjointed overlays may be overlapped."
 (defvar iedit-number-line-counter 1
   "Occurrence number for 'iedit-number-occurrences.")
 
-(defun iedit-default-occurence-number-format (start-at)
+(defun iedit-default-occurrence-number-format (start-at)
   (concat "%"
           (int-to-string
            (length (int-to-string
@@ -696,11 +696,11 @@ FORMAT."
        (let* ((start-at (read-number "Number to count from: " 1)))
          (list start-at
                (read-string "Format string: "
-                            (iedit-default-occurence-number-format
+                            (iedit-default-occurrence-number-format
                              start-at))))
-     (list  1 nil)))
+     (list 1 nil)))
   (unless format-string
-    (setq format-string (iedit-default-occurence-number-format start-at)))
+    (setq format-string (iedit-default-occurrence-number-format start-at)))
   (let ((iedit-number-occurrence-counter start-at)
         (inhibit-modification-hooks t))
     (save-excursion
