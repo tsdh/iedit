@@ -513,9 +513,10 @@ Commands:
     (save-excursion
       (goto-char beg)
       (while (re-search-forward occurrence-exp end t)
-        (push (iedit-make-occurrence-overlay (match-beginning 0) (match-end 0))
-              iedit-occurrences-overlays)
-        (setq counter (1+ counter)))
+        (when (not (text-property-any 0 (1- (length (match-string 0))) 'read-only t (match-string 0)))
+          (push (iedit-make-occurrence-overlay (match-beginning 0) (match-end 0))
+                iedit-occurrences-overlays)
+          (setq counter (1+ counter))))
       (if (= 0 counter)
           (error "0 matches for \"%s\"" (iedit-printable occurrence-exp))
         (setq iedit-occurrences-overlays (nreverse iedit-occurrences-overlays))
