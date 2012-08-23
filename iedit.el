@@ -134,6 +134,7 @@ For example, when invoking command `iedit-mode' on the \"in\" in the
 (defvar iedit-mode nil) ;; Name of the minor mode
 
 (make-variable-buffer-local 'iedit-mode)
+(put 'iedit-mode 'risky-local-variable t) ; required for modeline properties
 
 (or (assq 'iedit-mode minor-mode-alist)
     (nconc minor-mode-alist
