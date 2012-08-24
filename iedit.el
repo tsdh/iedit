@@ -2,9 +2,9 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-10 11:13:42 Victor Ren>
+;; Time-stamp: <2012-08-24 09:40:07 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
-;; Keywords: occurrence region simultaneous rectangle refactoring
+;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
 ;; Compatibility: GNU Emacs: 22.x, 23.x, 24.x
@@ -34,19 +34,15 @@
 ;; Normal scenario of iedit-mode is like:
 ;;
 ;; - Highlight certain contents - by press C-;
-;;   All occurrences of a symbol, string or a rectangle in the buffer or a
-;;   region may be highlighted corresponding to current mark, point and prefix
-;;   argument.  Refer to the document of `iedit-mode' for details.
+;;   All occurrences of a symbol, string in the buffer or a region may be
+;;   highlighted corresponding to current mark, point and prefix argument.
+;;   Refer to the document of `iedit-mode' for details.
 ;;
 ;; - Edit one of the occurrences
 ;;   The change is applied to other occurrences simultaneously.
 ;;
 ;; - Finish - by pressing C-; again
 ;;
-;; This package also provides rectangle support with *visible rectangle*
-;; highlighting, which is similar with cua mode rectangle support, but still
-;; quite different.
-
 ;; You can also use Iedit mode as a quick way to temporarily show only the
 ;; buffer lines that match the current text being edited.  This gives you the
 ;; effect of a temporary `keep-lines' or `occur'.  To get this effect, hit C-'
@@ -83,14 +79,7 @@
 ;;; Code:
 
 (eval-when-compile (require 'cl))
-(require 'rect) ;; kill rectangle
 (require 'iedit-lib)
-
-(defgroup iedit nil
-  "Edit multiple regions in the same way simultaneously."
-  :prefix "iedit-"
-  :group 'replace
-  :group 'convenience)
 
 (defcustom iedit-current-symbol-default t
   "If no-nil, use current symbol by default for the occurrence."
@@ -138,6 +127,7 @@ Iedit mode is turned off last time.")
 (make-variable-buffer-local 'iedit-mode)
 (make-variable-buffer-local 'iedit-only-complete-symbol-local)
 (make-variable-buffer-local 'iedit-last-occurrence-local)
+(make-variable-buffer-local 'iedit-initial-string-local)
 
 (or (assq 'iedit-mode minor-mode-alist)
     (nconc minor-mode-alist
@@ -162,14 +152,20 @@ Iedit mode is turned off last time.")
 ;;; Define iedit help map.
 (eval-when-compile (require 'help-macro))
 
-(defvar iedit-mode-keymap
+(defvar iedit-mode-occurrence-keymap
   (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map iedit-occurrence-keymap)
+    (set-keymap-parent map iedit-occurrence-keymap-default)
     (define-key map (kbd "M-H") 'iedit-restrict-function)
     (define-key map (kbd "M-C") 'iedit-toggle-case-sensitive)
     map)
   "Keymap used within overlays in Iedit mode.")
 
+(defvar iedit-mode-keymap
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map iedit-lib-keymap)
+    (define-key map (kbd "C-'") 'iedit-toggle-unmatched-lines-visible)
+    map)
+  "Keymap used while Iedit mode is enabled.")
 
 ;;; Define Iedit mode map
 (or (assq 'iedit-mode minor-mode-map-alist)
@@ -220,8 +216,8 @@ as occurrence.  If region active, Iedit mode is limited within
 the current region.
 
 If Iedit mode is on and region is active, Iedit mode is
-restricted in the region, e.g. the occurrences outside of the region
-is excluded.
+restricted in the region, e.g. the occurrences outside of the
+region is excluded.
 
 If Iedit mode is on and region is active, with an universal
 prefix argument, Iedit mode is restricted outside of the region,
@@ -298,7 +294,7 @@ Commands:
         (propertize
          (concat " Iedit:"
                  (number-to-string
-                  (iedit-make-occurrences-overlays occurrence-exp beg end)))
+                  (iedit-make-occurrences-overlays occurrence-exp beg end iedit-mode-occurrence-keymap)))
          'face
          'font-lock-warning-face))
   (force-mode-line-update))
@@ -415,7 +411,7 @@ Todo: how about region"
 ;;; iedit.el ends here
 
 ;;  LocalWords:  iedit el MERCHANTABILITY kbd isearch todo ert Lindberg Tassilo
-;;  LocalWords:  eval rect defgroup defcustom boolean defvar assq alist nconc
+;;  LocalWords:  eval defgroup defcustom boolean defvar assq alist nconc
 ;;  LocalWords:  substring cadr keymap defconst purecopy bkm defun princ prev
 ;;  LocalWords:  iso lefttab backtab upcase downcase concat setq autoload arg
 ;;  LocalWords:  refactoring propertize cond goto nreverse progn rotatef eq elp

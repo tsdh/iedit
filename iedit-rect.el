@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-10 16:20:22 Victor Ren>
+;; Time-stamp: <2012-08-23 15:30:08 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -28,8 +28,8 @@
 ;;; Commentary:
 
 ;; This package also provides rectangle support with *visible rectangle*
-;; highlighting, which is similar with cua mode rectangle support, but still
-;; quite different.
+;; highlighting, which is similar with cua mode rectangle support. But it's
+;; lighter weight and uses iedit mechanisms.
 
 ;; The code was developed and fully tested on Gnu Emacs 24.0.93, partially
 ;; tested on Gnu Emacs 22. If you have any compatible problem, please let me
@@ -69,14 +69,14 @@ current mode is iedit-rect. Otherwise it is nil.
 ;;; Define Iedit rect mode map
 (defvar iedit-rect-keymap
   (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map iedit-occurrence-keymap)
+    (set-keymap-parent map iedit-occurrence-keymap-default)
     (define-key map (kbd "M-K") 'iedit-kill-rectangle)
     map)
   "Keymap used within overlays in iedit-RECT mode.")
 
 (or (assq 'iedit-rectangle-mode minor-mode-map-alist)
     (setq minor-mode-map-alist
-          (cons (cons 'iedit-rectangle-mode iedit-rect-keymap) minor-mode-map-alist)))
+          (cons (cons 'iedit-rectangle-mode iedit-lib-keymap) minor-mode-map-alist)))
 
 
 ;; Avoid to restore Iedit-rect mode when restoring desktop
@@ -115,7 +115,8 @@ current mode is iedit-rect. Otherwise it is nil.
                           (point))
                         (progn
                           (move-to-column end-col t)
-                          (point)))
+                          (point))
+                        iedit-rect-keymap)
                        iedit-occurrences-overlays)
                  (forward-line 1))
             until (> (point) end))
