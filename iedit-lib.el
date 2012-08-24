@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-24 09:38:53 Victor Ren>
+;; Time-stamp: <2012-08-24 10:39:33 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -130,61 +130,6 @@ is not applied to other occurrences when it is true.")
 (defconst iedit-occurrence-overlay-name 'iedit-occurrence-overlay-name)
 (defconst iedit-invisible-overlay-name 'iedit-invisible-overlay-name)
 
-;;; Define iedit help map.
-(eval-when-compile (require 'help-macro))
-
-(defvar iedit-help-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (char-to-string help-char) 'iedit-help-for-help)
-    (define-key map [help] 'iedit-help-for-help)
-    (define-key map [f1] 'iedit-help-for-help)
-    (define-key map "?" 'iedit-help-for-help)
-    (define-key map "b" 'iedit-describe-bindings)
-    (define-key map "k" 'iedit-describe-key)
-    (define-key map "m" 'iedit-describe-mode)
-    (define-key map "q" 'help-quit)
-    map)
-  "Keymap for characters following the Help key for Iedit mode.")
-
-(make-help-screen
- iedit-help-for-help-internal
- (purecopy "Type a help option: [bkm] or ?")
- "You have typed %THIS-KEY%, the help character.  Type a Help option:
-\(Type \\<help-map>\\[help-quit] to exit the Help command.)
-
-b           Display all Iedit key bindings.
-k KEYS      Display full documentation of Iedit key sequence.
-m           Display documentation of Iedit mode.
-
-You can't type here other help keys available in the global help map,
-but outside of this help window when you type them in Iedit mode,
-they exit Iedit mode before displaying global help."
- iedit-help-map)
-
-(defun iedit-help-for-help ()
-  "Display Iedit help menu."
-  (interactive)
-  (let (same-window-buffer-names same-window-regexps)
-    (iedit-help-for-help-internal)))
-
-(defun iedit-describe-bindings ()
-  "Show a list of all keys defined in Iedit mode, and their definitions.
-This is like `describe-bindings', but displays only Iedit keys."
-  (interactive)
-  (let (same-window-buffer-names
-        same-window-regexps
-        (keymap (substitute-command-keys "\\{iedit-occurrence-keymap}")))
-    (with-help-window "*Help*"
-      (with-current-buffer standard-output
-        (princ "Iedit Mode Bindings: ")
-        (princ keymap)))))
-
-(defun iedit-describe-key ()
-  "Display documentation of the function invoked by Iedit mode key."
-  (interactive)
-  (let (same-window-buffer-names same-window-regexps)
-    (call-interactively 'describe-key)))
-
 ;;; Define Iedit mode map
 (defvar iedit-lib-keymap
   (let ((map (make-sparse-keymap)))
@@ -194,14 +139,12 @@ This is like `describe-bindings', but displays only Iedit keys."
     (define-key map (kbd "<S-iso-lefttab>") 'iedit-prev-occurrence)
     (define-key map (kbd "<backtab>") 'iedit-prev-occurrence)
     (define-key map (kbd "C-'") 'iedit-toggle-unmatched-lines-visible)
-    (define-key map (char-to-string help-char) iedit-help-map)
-    (define-key map [help] iedit-help-map)
-    (define-key map [f1] iedit-help-map)
     map)
   "Keymap used while Iedit mode is enabled.")
 
 (defvar iedit-occurrence-keymap-default
   (let ((map (make-sparse-keymap)))
+;;    (set-keymap-parent map iedit-lib-keymap)
     (define-key map (kbd "M-U") 'iedit-upcase-occurrences)
     (define-key map (kbd "M-L") 'iedit-downcase-occurrences)
     (define-key map (kbd "M-R") 'iedit-replace-occurrences)

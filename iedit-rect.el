@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-23 15:30:08 Victor Ren>
+;; Time-stamp: <2012-08-24 10:43:05 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -63,9 +63,6 @@ current mode is iedit-rect. Otherwise it is nil.
 
 (make-variable-buffer-local 'iedit-rectangle)
 
-;;; Define iedit help map.
-(eval-when-compile (require 'help-macro))
-
 ;;; Define Iedit rect mode map
 (defvar iedit-rect-keymap
   (let ((map (make-sparse-keymap)))
@@ -85,7 +82,7 @@ current mode is iedit-rect. Otherwise it is nil.
 
 ;;;###autoload
 (defun iedit-rectangle-mode ()
-  "Toggle iedit-RECT mode."
+  "Toggle iedit-RECT mode. TODO"
   (interactive)
   (if iedit-rectangle-mode
       (iedit-rectangle-done)
