@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-24 10:43:05 Victor Ren>
+;; Time-stamp: <2012-08-24 16:26:30 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -69,7 +69,7 @@ current mode is iedit-rect. Otherwise it is nil.
     (set-keymap-parent map iedit-occurrence-keymap-default)
     (define-key map (kbd "M-K") 'iedit-kill-rectangle)
     map)
-  "Keymap used within overlays in iedit-RECT mode.")
+  "Keymap used within overlays in Iedit-rect mode.")
 
 (or (assq 'iedit-rectangle-mode minor-mode-map-alist)
     (setq minor-mode-map-alist
@@ -82,7 +82,14 @@ current mode is iedit-rect. Otherwise it is nil.
 
 ;;;###autoload
 (defun iedit-rectangle-mode ()
-  "Toggle iedit-RECT mode. TODO"
+  "Toggle Iedit-rect mode.
+
+When Iedit-rect mode is on, a rectangle is started with visible
+rectangle highlighting.  Rectangle editting support is based on
+Iedit mechanism.
+
+Commands:
+\\{iedit-rect-keymap}"
   (interactive)
   (if iedit-rectangle-mode
       (iedit-rectangle-done)
@@ -119,7 +126,7 @@ current mode is iedit-rect. Otherwise it is nil.
             until (> (point) end))
       (setq iedit-occurrences-overlays (nreverse iedit-occurrences-overlays))))
   (setq iedit-rectangle-mode (propertize
-                    (concat " Iedit-RECT:" (number-to-string (length iedit-occurrences-overlays)))
+                    (concat " Iedit-rect:" (number-to-string (length iedit-occurrences-overlays)))
                     'face 'font-lock-warning-face))
   (force-mode-line-update)
   (add-hook 'kbd-macro-termination-hook 'iedit-rectangle-done nil t)
