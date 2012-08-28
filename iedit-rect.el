@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-24 16:26:30 Victor Ren>
+;; Time-stamp: <2012-08-28 15:47:41 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -28,7 +28,7 @@
 ;;; Commentary:
 
 ;; This package also provides rectangle support with *visible rectangle*
-;; highlighting, which is similar with cua mode rectangle support. But it's
+;; highlighting, which is similar with cua-mode rectangle support. But it is
 ;; lighter weight and uses iedit mechanisms.
 
 ;; The code was developed and fully tested on Gnu Emacs 24.0.93, partially
@@ -85,7 +85,7 @@ current mode is iedit-rect. Otherwise it is nil.
   "Toggle Iedit-rect mode.
 
 When Iedit-rect mode is on, a rectangle is started with visible
-rectangle highlighting.  Rectangle editting support is based on
+rectangle highlighting.  Rectangle editing support is based on
 Iedit mechanism.
 
 Commands:
