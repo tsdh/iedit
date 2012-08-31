@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-28 15:45:41 Victor Ren>
+;; Time-stamp: <2012-08-31 10:42:58 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -61,7 +61,10 @@
   :group 'iedit)
 
 (defcustom iedit-transient-mark-sensitive t
-  "If no-nil, Iedit mode is sensitive to the Transient Mark mode."
+  "If no-nil, Iedit mode is sensitive to the Transient Mark mode.
+It means Iedit works as expected only when regions are
+highlighted.  If you want to use iedit without Transient Mark
+mode, set it as nil."
   :type 'boolean
   :group 'iedit)
 

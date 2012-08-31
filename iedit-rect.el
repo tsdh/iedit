@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-28 15:47:41 Victor Ren>
+;; Time-stamp: <2012-08-31 11:34:26 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -97,7 +97,8 @@ Commands:
     (if (iedit-region-active)
         (let ((beg (region-beginning))
               (end (region-end)))
-          (set-mark nil)
+          (setq mark-active nil)
+          (run-hooks 'deactivate-mark-hook)
           (iedit-rectangle-start beg end)))))
 
 (defun iedit-rectangle-start (beg end)

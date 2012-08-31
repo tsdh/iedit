@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-30 17:29:05 Victor Ren>
+;; Time-stamp: <2012-08-31 11:28:00 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -335,7 +335,8 @@ Keymap used within overlays:
             (setq beg (region-beginning))
             (setq end (region-end)))))
       (setq iedit-only-complete-symbol-local complete-symbol)
-      (set-mark nil)
+      (setq mark-active nil)
+      (run-hooks 'deactivate-mark-hook)
       (setq iedit-case-sensitive-local iedit-case-sensitive-default)
       (iedit-start occurrence beg end))))
 
@@ -446,7 +447,8 @@ the initial string globally."
   (when iedit-buffering
     (iedit-stop-buffering))
   (setq iedit-last-occurrence-local (iedit-current-occurrence-string))
-  (set-mark nil)
+  (setq mark-active nil)
+  (run-hooks 'deactivate-mark-hook)
   (iedit-show-all)
   (iedit-cleanup-occurrences-overlays beg end inclusive)
   (if iedit-unmatched-lines-invisible
