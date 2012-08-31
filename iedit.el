@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-24 10:38:26 Victor Ren>
+;; Time-stamp: <2012-08-30 17:29:05 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -92,6 +92,11 @@ For example, when invoking command `iedit-mode' on the \"in\" in the
   sentence \"The king in the castle...\", the \"king\" is not
   edited."
   :type 'boolean
+  :group 'iedit)
+
+(defcustom iedit-toogle-key-default (kbd "C-;")
+  "If no-nil, the key is inserted into global-map, isearch-mode-map, esc-map and help-map."
+  :type 'vector
   :group 'iedit)
 
 (defvar iedit-mode-hook nil
@@ -195,10 +200,10 @@ This is like `describe-bindings', but displays only Iedit keys."
     (describe-function 'iedit-mode)))
 
 ;;; Default key bindings:
-(define-key global-map (kbd "C-;") 'iedit-mode)
-(define-key isearch-mode-map (kbd "C-;") 'iedit-mode)
-(define-key esc-map (kbd "C-;") 'iedit-execute-last-modification)
-(define-key help-map (kbd "C-;") 'iedit-mode-toggle-on-function)
+(define-key global-map iedit-toogle-key-default 'iedit-mode)
+(define-key isearch-mode-map iedit-toogle-key-default 'iedit-mode)
+(define-key esc-map iedit-toogle-key-default 'iedit-execute-last-modification)
+(define-key help-map iedit-toogle-key-default 'iedit-mode-toggle-on-function)
 
 ;; Avoid to restore Iedit mode when restoring desktop
 (add-to-list 'desktop-minor-mode-handlers
