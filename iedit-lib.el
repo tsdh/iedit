@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-31 10:42:58 Victor Ren>
+;; Time-stamp: <2012-09-05 09:33:31 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -92,7 +92,8 @@ unmatched lines are hided.")
 forward or backward successful")
 
 (defvar iedit-before-modification-string ""
-  "This is buffer local variable which is the buffer substring that is going to be changed.")
+  "This is buffer local variable which is the buffer substring
+that is going to be changed.")
 
 (defvar iedit-before-modification-undo-list nil
   "This is buffer local variable which is the buffer undo list before modification.")
@@ -108,7 +109,7 @@ insertion against a zero-width occurrence.")
   "This is buffer local variable which indicates Iedit mode is aborting.")
 
 (defvar iedit-aborting-hook nil
-  "Functions to call before iedit-abort. Normally it should be mode exit function.")
+  "Functions to call before iedit-abort.  Normally it should be mode exit function.")
 
 (defvar iedit-post-undo-hook-installed nil
   "This is buffer local variable which indicated if
@@ -204,6 +205,23 @@ Return the number of occurrences."
             (iedit-hide-unmatched-lines iedit-occurrence-context-lines))))
     counter))
 
+(defun iedit-add-next-occurrence-overlay (occurrence-exp &optional keymap)
+  "Create next occurrence overlay for `occurrence-exp'."
+  (unless keymap
+    (setq keymap iedit-occurrence-keymap-default))
+  (let ((case-fold-search (not iedit-case-sensitive-local)))
+    (when (re-search-forward occurrence-exp nil t)
+      (push (iedit-make-occurrence-overlay (match-beginning 0)
+                                           (match-end 0)
+                                           keymap)
+            iedit-occurrences-overlays)
+      (sort iedit-occurrences-overlays
+            (lambda (left right)
+              (< (overlay-start left) (overlay-start right))))
+      (message "Add one match for \"%s\"" (iedit-printable occurrence-exp))
+      (if iedit-unmatched-lines-invisible
+          (iedit-hide-unmatched-lines iedit-occurrence-context-lines)))))
+
 (defun iedit-add-region-as-occurrence (beg end)
   "Add region as an occurrence.
 The length of the region must the same as other occurrences if
@@ -257,7 +275,7 @@ occurrences if the user starts typing."
     unmatched-lines-overlay))
 
 (defun iedit-post-undo-hook ()
-  "Check if it is time to abort iedit.
+  "Check if it is time to abort iedit after undo command is executed.
 
 This is added to `post-command-hook' when undo command is executed
 in occurrences."
@@ -289,6 +307,8 @@ Current supported edits are insertion, yank, deletion and
 replacement.  If this modification is going out of the
 occurrence, it will abort Iedit mode."
   (if undo-in-progress
+      ;; If the "undo" change make occurrences different, it is going to mess up
+      ;; occurrences.  So a check will be done after undo command is executed.
       (when (not iedit-post-undo-hook-installed)
         (add-hook 'post-command-hook 'iedit-post-undo-hook nil t)
         (setq iedit-post-undo-hook-installed t))
