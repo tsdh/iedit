@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-09-05 09:33:31 Victor Ren>
+;; Time-stamp: <2012-09-05 09:46:44 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -165,7 +165,11 @@ is not applied to other occurrences when it is true.")
     (define-key map (kbd "M->") 'iedit-last-occurrence)
     (define-key map (kbd "C-?") 'iedit-help-for-occurrences)
     map)
-  "Default keymap used within overlays.")
+  "Default keymap used within occurrence overlays.")
+
+(defvar iedit-occurrence-keymap 'iedit-occurrence-keymap-default
+  "Keymap used within occurrence overlays")
+(make-local-variable 'iedit-occurrence-context-lines)
 
 (defun iedit-help-for-occurrences ()
   "Display `iedit-occurrence-keymap-default'"
@@ -182,20 +186,18 @@ is not applied to other occurrences when it is true.")
                    (substitute-command-keys "\\[iedit-last-occurrence]") ":first/last "
                    )))
 
-(defun iedit-make-occurrences-overlays (occurrence-exp beg end &optional keymap)
+(defun iedit-make-occurrences-overlays (occurrence-exp beg end)
   "Create occurrence overlays for `occurrence-exp' in a region.
 Return the number of occurrences."
   (setq iedit-aborting nil)
   (setq iedit-occurrences-overlays nil)
-  (unless keymap
-    (setq keymap iedit-occurrence-keymap-default))
   ;; Find and record each occurrence's markers and add the overlay to the occurrences
   (let ((counter 0)
         (case-fold-search (not iedit-case-sensitive-local)))
     (save-excursion
       (goto-char beg)
       (while (re-search-forward occurrence-exp end t)
-        (push (iedit-make-occurrence-overlay (match-beginning 0) (match-end 0) keymap)
+        (push (iedit-make-occurrence-overlay (match-beginning 0) (match-end 0))
               iedit-occurrences-overlays)
         (setq counter (1+ counter)))
       (message "%d matches for \"%s\"" counter (iedit-printable occurrence-exp))
@@ -205,15 +207,12 @@ Return the number of occurrences."
             (iedit-hide-unmatched-lines iedit-occurrence-context-lines))))
     counter))
 
-(defun iedit-add-next-occurrence-overlay (occurrence-exp &optional keymap)
+(defun iedit-add-next-occurrence-overlay (occurrence-exp)
   "Create next occurrence overlay for `occurrence-exp'."
-  (unless keymap
-    (setq keymap iedit-occurrence-keymap-default))
   (let ((case-fold-search (not iedit-case-sensitive-local)))
     (when (re-search-forward occurrence-exp nil t)
       (push (iedit-make-occurrence-overlay (match-beginning 0)
-                                           (match-end 0)
-                                           keymap)
+                                           (match-end 0))
             iedit-occurrences-overlays)
       (sort iedit-occurrences-overlays
             (lambda (left right)
@@ -252,7 +251,7 @@ there are."
   (setq iedit-before-modification-string "")
   (setq iedit-before-modification-undo-list nil))
 
-(defun iedit-make-occurrence-overlay (begin end keymap)
+(defun iedit-make-occurrence-overlay (begin end)
   "Create an overlay for an occurrence in Iedit mode.
 Add the properties for the overlay: a face used to display a
 occurrence's default value, and modification hooks to update
@@ -260,7 +259,7 @@ occurrences if the user starts typing."
   (let ((occurrence (make-overlay begin end (current-buffer) nil t)))
     (overlay-put occurrence iedit-occurrence-overlay-name t)
     (overlay-put occurrence 'face 'iedit-occurrence)
-    (overlay-put occurrence 'keymap keymap)
+    (overlay-put occurrence 'keymap iedit-occurrence-keymap)
     (overlay-put occurrence 'insert-in-front-hooks '(iedit-occurrence-update))
     (overlay-put occurrence 'insert-behind-hooks '(iedit-occurrence-update))
     (overlay-put occurrence 'modification-hooks '(iedit-occurrence-update))

@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-31 11:34:26 Victor Ren>
+;; Time-stamp: <2012-09-05 09:49:55 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -107,6 +107,7 @@ Commands:
   (setq iedit-occurrences-overlays nil)
   (setq iedit-rectangle (list beg end))
   (setq iedit-initial-string-local nil)
+  (setq iedit-occurrence-keymap iedit-rect-keymap)
   (save-excursion
     (let ((beg-col (progn (goto-char beg) (current-column)))
           (end-col (progn (goto-char end) (current-column))))
@@ -120,8 +121,7 @@ Commands:
                           (point))
                         (progn
                           (move-to-column end-col t)
-                          (point))
-                        iedit-rect-keymap)
+                          (point)))
                        iedit-occurrences-overlays)
                  (forward-line 1))
             until (> (point) end))

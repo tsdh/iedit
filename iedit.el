@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-31 11:28:00 Victor Ren>
+;; Time-stamp: <2012-09-05 09:47:56 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -353,13 +353,14 @@ Keymap used within overlays:
 (defun iedit-refresh (occurrence-exp beg end)
   "Refresh Iedit mode."
   (setq occurrence-exp (regexp-quote occurrence-exp))
+  (setq iedit-occurrence-keymap iedit-mode-occurrence-keymap)
   (when iedit-only-complete-symbol-local
     (setq occurrence-exp (concat "\\_<" occurrence-exp "\\_>")))
   (setq iedit-mode
         (propertize
          (concat " Iedit:"
                  (number-to-string
-                  (iedit-make-occurrences-overlays occurrence-exp beg end iedit-mode-occurrence-keymap)))
+                  (iedit-make-occurrences-overlays occurrence-exp beg end)))
          'face
          'font-lock-warning-face))
   (force-mode-line-update))
