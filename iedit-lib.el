@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-09-05 09:46:44 Victor Ren>
+;; Time-stamp: <2012-09-06 11:07:10 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -33,7 +33,7 @@
 ;;; todo:
 ;; - Update comments for APIs
 ;; - Add more easy access keys for whole occurrence
-;; - More APIs: extend occurrences, add-next, add previous, add region
+;; - More APIs: extend occurrences,
 
 ;;; Code:
 
@@ -168,7 +168,8 @@ is not applied to other occurrences when it is true.")
   "Default keymap used within occurrence overlays.")
 
 (defvar iedit-occurrence-keymap 'iedit-occurrence-keymap-default
-  "Keymap used within occurrence overlays")
+  "Keymap used within occurrence overlays.
+It should be set before occurrence overlay is created.")
 (make-local-variable 'iedit-occurrence-context-lines)
 
 (defun iedit-help-for-occurrences ()
@@ -207,19 +208,37 @@ Return the number of occurrences."
             (iedit-hide-unmatched-lines iedit-occurrence-context-lines))))
     counter))
 
-(defun iedit-add-next-occurrence-overlay (occurrence-exp)
+(defun iedit-add-next-occurrence-overlay (occurrence-exp &optional point)
   "Create next occurrence overlay for `occurrence-exp'."
+  (iedit-add-occurrence-overlay occurrence-exp point t))
+
+(defun iedit-add-previous-occurrence-overlay (occurrence-exp &optional point)
+  "Create previous occurrence overlay for `occurrence-exp'."
+  (iedit-add-occurrence-overlay occurrence-exp point nil))
+
+(defun iedit-add-occurrence-overlay (occurrence-exp point forward)
+  "Create next or previous occurrence overlay for `occurrence-exp'."
+  (or point
+      (setq point (point)))
   (let ((case-fold-search (not iedit-case-sensitive-local)))
-    (when (re-search-forward occurrence-exp nil t)
-      (push (iedit-make-occurrence-overlay (match-beginning 0)
-                                           (match-end 0))
-            iedit-occurrences-overlays)
-      (sort iedit-occurrences-overlays
-            (lambda (left right)
-              (< (overlay-start left) (overlay-start right))))
-      (message "Add one match for \"%s\"" (iedit-printable occurrence-exp))
-      (if iedit-unmatched-lines-invisible
-          (iedit-hide-unmatched-lines iedit-occurrence-context-lines)))))
+    (save-excursion
+      (goto-char point)
+      (if (not (if forward
+                   (re-search-forward occurrence-exp nil t)
+                 (re-search-backward occurrence-exp nil t)))
+          (message "No matches.")
+        (if (or (iedit-find-overlay-at-point (match-beginning 0) 'iedit-occurrence-overlay-name)
+                (iedit-find-overlay-at-point (match-end 0) 'iedit-occurrence-overlay-name))
+            (error "Conflict region."))
+        (push (iedit-make-occurrence-overlay (match-beginning 0)
+                                             (match-end 0))
+              iedit-occurrences-overlays)
+        (sort iedit-occurrences-overlays
+              (lambda (left right)
+                (< (overlay-start left) (overlay-start right))))
+        (message "Add one match for \"%s\"" (iedit-printable occurrence-exp))
+        (if iedit-unmatched-lines-invisible
+            (iedit-hide-unmatched-lines iedit-occurrence-context-lines))))))
 
 (defun iedit-add-region-as-occurrence (beg end)
   "Add region as an occurrence.
@@ -229,14 +248,14 @@ there are."
       (error "No region"))
   (if (null iedit-occurrences-overlays)
       (push
-       (iedit-make-occurrence-overlay beg end iedit-occurrence-keymap-default)
+       (iedit-make-occurrence-overlay beg end)
        iedit-occurrences-overlays)
     (or (= (- end beg) (iedit-occurrence-string-length))
         (error "Wrong region."))
     (if (or (iedit-find-overlay-at-point beg 'iedit-occurrence-overlay-name)
             (iedit-find-overlay-at-point end 'iedit-occurrence-overlay-name))
         (error "Conflict region."))
-    (push (iedit-make-occurrence-overlay beg end iedit-occurrence-keymap-default)
+    (push (iedit-make-occurrence-overlay beg end)
           iedit-occurrences-overlays)
     (sort iedit-occurrences-overlays
           (lambda (left right)
@@ -483,7 +502,7 @@ value of `iedit-occurrence-context-lines' is used for this time."
 
 (defun iedit-hide-unmatched-lines (context-lines)
   "Hide unmatched lines using invisible overlay.
-This function depends on the order of iedit-occurrences-overlays. TODO"
+This function depends on the order of `iedit-occurrences-overlays'. TODO"
   (let ((prev-occurrence-end 1)
         (unmatched-lines nil))
     (save-excursion
