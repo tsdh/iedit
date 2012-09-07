@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-09-06 11:07:10 Victor Ren>
+;; Time-stamp: <2012-09-07 16:28:18 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -75,12 +75,8 @@ occurrence overlay is used to provide a different face
 configurable via `iedit-occurrence-face'.  The list is sorted by
 the position of overlays.")
 
-(defvar iedit-case-sensitive-local iedit-case-sensitive-default
+(defvar iedit-case-sensitive iedit-case-sensitive-default
   "This is buffer local variable.
-If no-nil, matching is case sensitive.")
-
-(defvar iedit-case-sensitive-global iedit-case-sensitive-default
-  "This is global variable.
 If no-nil, matching is case sensitive.")
 
 (defvar iedit-unmatched-lines-invisible nil
@@ -125,7 +121,7 @@ is not applied to other occurrences when it is true.")
 
 (make-variable-buffer-local 'iedit-occurrences-overlays)
 (make-variable-buffer-local 'iedit-unmatched-lines-invisible)
-(make-variable-buffer-local 'iedit-case-sensitive-local)
+(make-local-variable 'iedit-case-sensitive)
 (make-variable-buffer-local 'iedit-forward-success)
 (make-variable-buffer-local 'iedit-before-modification-string)
 (make-variable-buffer-local 'iedit-before-modification-undo-list)
@@ -170,7 +166,7 @@ is not applied to other occurrences when it is true.")
 (defvar iedit-occurrence-keymap 'iedit-occurrence-keymap-default
   "Keymap used within occurrence overlays.
 It should be set before occurrence overlay is created.")
-(make-local-variable 'iedit-occurrence-context-lines)
+(make-local-variable 'iedit-occurrence-keymap)
 
 (defun iedit-help-for-occurrences ()
   "Display `iedit-occurrence-keymap-default'"
@@ -187,21 +183,21 @@ It should be set before occurrence overlay is created.")
                    (substitute-command-keys "\\[iedit-last-occurrence]") ":first/last "
                    )))
 
-(defun iedit-make-occurrences-overlays (occurrence-exp beg end)
-  "Create occurrence overlays for `occurrence-exp' in a region.
+(defun iedit-make-occurrences-overlays (occurrence-regexp beg end)
+  "Create occurrence overlays for `occurrence-regexp' in a region.
 Return the number of occurrences."
   (setq iedit-aborting nil)
   (setq iedit-occurrences-overlays nil)
   ;; Find and record each occurrence's markers and add the overlay to the occurrences
   (let ((counter 0)
-        (case-fold-search (not iedit-case-sensitive-local)))
+        (case-fold-search (not iedit-case-sensitive)))
     (save-excursion
       (goto-char beg)
-      (while (re-search-forward occurrence-exp end t)
+      (while (re-search-forward occurrence-regexp end t)
         (push (iedit-make-occurrence-overlay (match-beginning 0) (match-end 0))
               iedit-occurrences-overlays)
         (setq counter (1+ counter)))
-      (message "%d matches for \"%s\"" counter (iedit-printable occurrence-exp))
+      (message "%d matches for \"%s\"" counter (iedit-printable occurrence-regexp))
       (when (/= 0 counter)
         (setq iedit-occurrences-overlays (nreverse iedit-occurrences-overlays))
         (if iedit-unmatched-lines-invisible
@@ -220,7 +216,7 @@ Return the number of occurrences."
   "Create next or previous occurrence overlay for `occurrence-exp'."
   (or point
       (setq point (point)))
-  (let ((case-fold-search (not iedit-case-sensitive-local)))
+  (let ((case-fold-search (not iedit-case-sensitive)))
     (save-excursion
       (goto-char point)
       (if (not (if forward
