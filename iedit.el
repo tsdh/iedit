@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-09-07 17:26:42 Victor Ren>
+;; Time-stamp: <2012-09-12 15:22:33 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -94,7 +94,7 @@ For example, when invoking command `iedit-mode' on the \"in\" in the
   :type 'boolean
   :group 'iedit)
 
-(defcustom iedit-toogle-key-default (kbd "C-;")
+(defcustom iedit-toggle-key-default (kbd "C-;")
   "If no-nil, the key is inserted into global-map, isearch-mode-map, esc-map and help-map."
   :type 'vector
   :group 'iedit)
@@ -128,11 +128,17 @@ Iedit mode is turned off last time.")
 
 (defvar iedit-initial-string-local nil
   "This is buffer local variable which is the initial string to start Iedit mode.")
+(defvar iedit-initial-region nil
+  "This is buffer local variable which is the initial region
+where Iedit mode is started from.")
+
 
 (make-variable-buffer-local 'iedit-mode)
 (make-variable-buffer-local 'iedit-only-complete-symbol-local)
 (make-variable-buffer-local 'iedit-last-occurrence-local)
 (make-variable-buffer-local 'iedit-initial-string-local)
+(make-variable-buffer-local 'iedit-initial-region)
+
 
 (or (assq 'iedit-mode minor-mode-alist)
     (nconc minor-mode-alist
@@ -200,11 +206,11 @@ This is like `describe-bindings', but displays only Iedit keys."
     (describe-function 'iedit-mode)))
 
 ;;; Default key bindings:
-(when iedit-toogle-key-default
-  (define-key global-map iedit-toogle-key-default 'iedit-mode)
-  (define-key isearch-mode-map iedit-toogle-key-default 'iedit-mode-from-isearch)
-  (define-key esc-map iedit-toogle-key-default 'iedit-execute-last-modification)
-  (define-key help-map iedit-toogle-key-default 'iedit-mode-toggle-on-function))
+(when iedit-toggle-key-default
+  (define-key global-map iedit-toggle-key-default 'iedit-mode)
+  (define-key isearch-mode-map iedit-toggle-key-default 'iedit-mode-from-isearch)
+  (define-key esc-map iedit-toggle-key-default 'iedit-execute-last-modification)
+  (define-key help-map iedit-toggle-key-default 'iedit-mode-toggle-on-function))
 
 ;; Avoid to restore Iedit mode when restoring desktop
 (add-to-list 'desktop-minor-mode-handlers
@@ -358,6 +364,7 @@ Keymap used within overlays:
   "Start Iedit mode for the `occurrence-regexp' in the current buffer."
   (setq iedit-unmatched-lines-invisible iedit-unmatched-lines-invisible-default)
   (setq iedit-initial-string-local occurrence-regexp)
+  (setq iedit-initial-region (list beg end))
   (iedit-start2 occurrence-regexp beg end)
   (run-hooks 'iedit-mode-hook)
   (add-hook 'kbd-macro-termination-hook 'iedit-done nil t)
@@ -487,7 +494,9 @@ Todo: how about region"
   (when iedit-last-occurrence-local
     (remove-overlays nil nil iedit-occurrence-overlay-name t)
     (iedit-show-all)
-    (iedit-start2 (iedit-regexp-quote iedit-last-occurrence-local) (point-min) (point-max))))
+    (iedit-start2 (iedit-regexp-quote iedit-last-occurrence-local)
+                  (car iedit-initial-region)
+                  (cadr iedit-initial-region))))
 
 (provide 'iedit)
 
