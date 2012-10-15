@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-08-09 17:17:03 Victor Ren>
+;; Time-stamp: <2012-10-15 16:12:02 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.97
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -30,6 +30,7 @@
 ;;; Code:
 (require 'ert)
 (require 'iedit)
+(require 'iedit-rect)
 
 (ert-deftest iedit-compile-test ()
   (let ((byte-compile-error-on-warn t ))
@@ -128,6 +129,25 @@ foo"
  123foo456123foo456
  123foo456")))))
 
+(ert-deftest iedit-overlay-at-end-of-buffer ()
+  (with-iedit-test-fixture
+   "foo
+foo"
+   (lambda ()
+     (iedit-mode)
+     (highlight-changes-mode 1)
+     (goto-char (point-min))
+     (goto-char (point-at-eol))
+     (iedit-mode)
+     (delete-region (point) (1- (point)))
+     (should (string= (buffer-string)
+                      "fo
+fo"))
+     (insert "b")
+     (should (string= (buffer-string)
+                      "fob
+fob")))))
+
 (ert-deftest iedit-mode-start-from-isearch-test ()
   (with-iedit-test-fixture
 "foo
@@ -143,7 +163,7 @@ foo"
      (isearch-process-search-char ?f)
      (isearch-process-search-char ?o)
      (isearch-process-search-char ?o)
-     (iedit-mode)
+     (iedit-mode-from-isearch)
      (should (string= iedit-initial-string-local "foo"))
      (should (= 4 (length iedit-occurrences-overlays)))
      (iedit-mode)
@@ -342,8 +362,7 @@ foo"
      (iedit-mode) ; turn off iedit
      (goto-char 2)
      (set-mark-command nil)
-     (forward-char 1)
-     (forward-line 1)
+     (goto-char 7)
      (iedit-rectangle-mode)
      (iedit-blank-occurrences)
      (should (string= (buffer-string) "f o
@@ -463,7 +482,7 @@ arfoo
       (should (= 1 (length iedit-occurrences-overlays)))
       (iedit-mode)
       (goto-char 13)
-      (iedit-mode-on-function)
+      (iedit-mode-toggle-on-function)
       (should (= 4 (length iedit-occurrences-overlays)))
       (iedit-mode)
       (iedit-mode)
