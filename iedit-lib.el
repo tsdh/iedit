@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-09-07 16:28:18 Victor Ren>
+;; Time-stamp: <2012-10-17 08:48:28 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -376,16 +376,14 @@ occurrence, it will abort Iedit mode."
                         (iedit-move-conjoined-overlays another-occurrence)))
                   ;; deletion
                   (dolist (another-occurrence (remove occurrence iedit-occurrences-overlays))
-                    (let* ((beginning (+ (overlay-start another-occurrence) offset))
-                           (ending (+ beginning change)))
-                      (delete-region beginning ending)
+                    (let ((beginning (+ (overlay-start another-occurrence) offset)))
+                      (delete-region beginning (+ beginning change))
                       (unless (eq beg end) ;; replacement
                         (goto-char beginning)
                         (insert-and-inherit value))
                       (run-hook-with-args 'after-change-functions
                                           beginning
-                                          (min ending
-                                               (point-max))
+                                          (+ beginning (- beg end))
                                           change)))))))))))))
 
 (defun iedit-next-occurrence ()
