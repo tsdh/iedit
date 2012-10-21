@@ -29,6 +29,7 @@
 
 ;;; Code:
 (require 'ert)
+(require 'test-util)
 (require 'iedit)
 (require 'iedit-rect)
 
@@ -425,7 +426,7 @@ fob")))))
    (forward-char 3)
    (forward-line 3)
    (call-interactively 'iedit-rectangle-mode)
-   (should (equal iedit-rectangle '(1 19))))))
+   (should (equal (marker-position-list iedit-rectangle) '(1 19))))))
 
 (ert-deftest iedit-kill-rectangle-error-test ()
   (with-iedit-test-fixture
@@ -439,7 +440,7 @@ fob")))))
    (goto-char 22)
    (call-interactively 'iedit-rectangle-mode)
    (should (iedit-same-column))
-   (should (equal iedit-rectangle '(1 22)))
+   (should (equal (marker-position-list iedit-rectangle) '(1 22)))
    (iedit-prev-occurrence)
    (delete-char -1)
    (should (not (iedit-same-column)))
@@ -457,7 +458,7 @@ fob")))))
    (goto-char 22)
    (call-interactively 'iedit-rectangle-mode)
    (should (iedit-same-column))
-   (should (equal iedit-rectangle '(1 22)))
+   (should (equal (marker-position-list iedit-rectangle) '(1 22)))
    (iedit-kill-rectangle)
    (should (string= (buffer-string)
 "
