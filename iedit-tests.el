@@ -475,6 +475,23 @@ arfoo
  foo"))
  (should (equal killed-rectangle '("foo" " fo" "  b" "   "))))))
 
+(ert-deftest iedit-kill-rectangle-fill-extra-spaces ()
+  "lines within rectangle shorter than rectangle right column
+  should have spaces filled in."
+  (with-iedit-test-fixture
+   "foo
+ foo
+  barfoo
+    foo"
+   (lambda ()
+     (iedit-mode)
+     (setq indent-tabs-mode nil)
+     (set-mark-command nil)
+     (goto-word "barfoo")
+     (call-interactively 'iedit-rectangle-mode)
+     (should (iedit-same-column))
+     (should (equal '(1 27) (marker-position-list iedit-rectangle))))))
+
 (ert-deftest iedit-restrict-defun-test ()
   (with-iedit-test-fixture
 "a
