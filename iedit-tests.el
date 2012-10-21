@@ -38,20 +38,28 @@
     (should (byte-compile-file "iedit.el"))
     (delete-file "iedit.elc" nil)))
 
+(defmacro with-iedit-test-buffer (buffer-name &rest body)
+  (declare (indent 1) (debug t))
+  `(progn
+     (when (get-buffer ,buffer-name)
+       (kill-buffer ,buffer-name))
+     (with-current-buffer (get-buffer-create ,buffer-name)
+       ,@body)))
+
 (defun with-iedit-test-fixture (input-buffer-string body)
   "iedit test fixture"
   (let ((old-transient-mark-mode transient-mark-mode)
         (old-iedit-transient-sensitive iedit-transient-mark-sensitive))
     (unwind-protect
         (progn
-          (with-temp-buffer
+          (with-iedit-test-buffer "* iedit transient mark *"
             (transient-mark-mode t)
             (setq iedit-transient-mark-sensitive t)
             (insert input-buffer-string)
             (goto-char 1)
             (iedit-mode)
             (funcall body))
-          (with-temp-buffer
+          (with-iedit-test-buffer "* iedit NO transient mark *"
             (setq iedit-transient-mark-sensitive nil)
             (transient-mark-mode -1)
             (insert input-buffer-string)
