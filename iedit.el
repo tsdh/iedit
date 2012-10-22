@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-10-22 13:59:18 Victor Ren>
+;; Time-stamp: <2012-10-22 14:14:53 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -364,7 +364,7 @@ Keymap used within overlays:
   (if (iedit-same-length)
       nil
     (iedit-done)
-    (message "Matches are not the same length."))))
+    (message "Matches are not the same length.")))
 
 (defun iedit-start (occurrence-regexp beg end)
   "Start Iedit mode for the `occurrence-regexp' in the current buffer."
