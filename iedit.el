@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-10-15 15:09:14 Victor Ren>
+;; Time-stamp: <2012-10-22 13:59:18 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -343,22 +343,25 @@ Keymap used within overlays:
       (setq iedit-initial-string-local occurrence)
       (iedit-start (iedit-regexp-quote occurrence) beg end))))
 
-(defun iedit-mode-from-isearch ()
+(defun iedit-mode-from-isearch (regexp)
   "Start Iedit mode using last search string as the regexp."
-  (interactive)
-  (let ((regexp (cond
+  (interactive
+   (let ((regexp (cond
+                  ((functionp isearch-word)
+                   (funcall isearch-word isearch-string))
                   (isearch-word (word-search-regexp isearch-string))
                   (isearch-regexp isearch-string)
                   (t (regexp-quote isearch-string)))))
-    (if (or isearch-regexp isearch-word)
-        nil
-      (setq iedit-initial-string-local isearch-string))
-    (isearch-exit)
-    (setq mark-active nil)
-    (run-hooks 'deactivate-mark-hook)
-    (iedit-start regexp (point-min) (point-max))
+     (list regexp)))
+  (if (or isearch-regexp isearch-word)
+      nil
+    (setq iedit-initial-string-local isearch-string))
+  (isearch-exit)
+  (setq mark-active nil)
+  (run-hooks 'deactivate-mark-hook)
+  (iedit-start regexp (point-min) (point-max))
   ;; TODO: reconsider how to avoid the loop in iedit-same-length
-    (if (iedit-same-length)
+  (if (iedit-same-length)
       nil
     (iedit-done)
     (message "Matches are not the same length."))))

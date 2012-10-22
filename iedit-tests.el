@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-10-15 16:12:02 Victor Ren>
+;; Time-stamp: <2012-10-22 14:01:57 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.97
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -163,7 +163,7 @@ fob")))))
      (isearch-process-search-char ?f)
      (isearch-process-search-char ?o)
      (isearch-process-search-char ?o)
-     (iedit-mode-from-isearch)
+     (call-interactively 'iedit-mode-from-isearch)
      (should (string= iedit-initial-string-local "foo"))
      (should (= 4 (length iedit-occurrences-overlays)))
      (iedit-mode)
