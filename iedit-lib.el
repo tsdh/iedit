@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-10-17 08:48:28 Victor Ren>
+;; Time-stamp: <2012-12-07 23:16:43 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -496,20 +496,22 @@ value of `iedit-occurrence-context-lines' is used for this time."
   (remove-overlays nil nil iedit-invisible-overlay-name t))
 
 (defun iedit-hide-unmatched-lines (context-lines)
-  "Hide unmatched lines using invisible overlay.
-This function depends on the order of `iedit-occurrences-overlays'. TODO"
+  "Hide unmatched lines using invisible overlay."
   (let ((prev-occurrence-end 1)
         (unmatched-lines nil))
     (save-excursion
-      (dolist (overlay iedit-occurrences-overlays)
-        (goto-char (overlay-start overlay))
+      (iedit-first-occurrence)
+      (while (/= (point) (point-max))
         (forward-line (- context-lines))
         (let ((line-beginning (line-beginning-position)))
           (if (> line-beginning prev-occurrence-end)
               (push  (list prev-occurrence-end (1- line-beginning)) unmatched-lines)))
-        (goto-char (overlay-end overlay))
+        ;; goto the end of the occurrence
+        (goto-char (next-single-char-property-change (point) 'iedit-occurrence-overlay-name))
         (forward-line context-lines)
-        (setq prev-occurrence-end (line-end-position)))
+        (setq prev-occurrence-end (line-end-position))
+        ;; goto the beginning of next occurrence
+        (goto-char (next-single-char-property-change (point) 'iedit-occurrence-overlay-name)))
       (if (< prev-occurrence-end (point-max))
           (push (list prev-occurrence-end (point-max)) unmatched-lines))
       (when unmatched-lines
@@ -593,12 +595,7 @@ be applied to other occurrences when buffering is off."
   (setq iedit-buffering t)
   (setq iedit-before-modification-string (iedit-current-occurrence-string))
   (setq iedit-before-modification-undo-list buffer-undo-list)
-  (message "Start buffering editing...")
-  ;; (setq iedit-mode (propertize
-  ;;                   (concat " Iedit-B:" (number-to-string (length iedit-occurrences-overlays)))
-  ;;                   'face 'font-lock-warning-face))
-  ;; (force-mode-line-update)
-  )
+  (message "Start buffering editing..."))
 
 (defun iedit-stop-buffering ()
   "Stop buffering and apply the modification to other occurrences.
