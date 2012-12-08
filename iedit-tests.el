@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-12-08 23:40:48 Victor Ren>
+;; Time-stamp: <2012-12-09 00:11:33 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.97
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -567,7 +567,6 @@ abcd" "12345678901234567890123456789012345678901234567890...")))
 ;;                        ;; replace-match
 ;;                        text-property-not-all
 ;;                        iedit-make-occurrence-overlay
-;;                        nreverse
 ;;                        iedit-make-occurrences-overlays
 ;;                        match-beginning
 ;;                        match-end

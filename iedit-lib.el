@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-12-08 23:35:32 Victor Ren>
+;; Time-stamp: <2012-12-09 00:42:28 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -77,8 +77,7 @@ mode, set it as nil."
   "The occurrences slot contains a list of overlays used to
 indicate the position of each editable occurrence.  In addition, the
 occurrence overlay is used to provide a different face
-configurable via `iedit-occurrence'.  The list is sorted by
-the position of overlays.")             ;todo remove sort
+configurable via `iedit-occurrence'.")
 
 (defvar iedit-read-only-occurrences-overlays nil
   "The occurrences slot contains a list of overlays used to
@@ -216,8 +215,7 @@ Return the number of occurrences."
                   iedit-occurrences-overlays))
           (setq counter (1+ counter))))
       (message "%d matches for \"%s\"" counter (iedit-printable occurrence-regexp))
-      (when (/= 0 counter)              ;todo: remove nreverse
-        (setq iedit-occurrences-overlays (nreverse iedit-occurrences-overlays))
+      (when (/= 0 counter)
         (if iedit-unmatched-lines-invisible
             (iedit-hide-unmatched-lines iedit-occurrence-context-lines))))
     counter))
@@ -247,9 +245,6 @@ Return the number of occurrences."
         (push (iedit-make-occurrence-overlay (match-beginning 0)
                                              (match-end 0))
               iedit-occurrences-overlays)
-        (sort iedit-occurrences-overlays
-              (lambda (left right)
-                (< (overlay-start left) (overlay-start right))))
         (message "Add one match for \"%s\"" (iedit-printable occurrence-exp))
         (if iedit-unmatched-lines-invisible
             (iedit-hide-unmatched-lines iedit-occurrence-context-lines))))))
@@ -271,9 +266,7 @@ there are."
         (error "Conflict region."))
     (push (iedit-make-occurrence-overlay beg end)
           iedit-occurrences-overlays)
-    (sort iedit-occurrences-overlays
-          (lambda (left right)
-            (< (overlay-start left) (overlay-start right)))))) ;; todo test this function
+    )) ;; todo test this function
 
 (defun iedit-cleanup ()
   "Clean up occurrence overlay, invisible overlay and local variables."
@@ -710,12 +703,14 @@ FORMAT."
   (let ((iedit-number-occurrence-counter start-at)
         (inhibit-modification-hooks t))
     (save-excursion
-      (dolist (occurrence iedit-occurrences-overlays)
-        (goto-char (overlay-start occurrence))
+      (iedit-first-occurrence)
+      (while (/= (point) (point-max))
         (insert (format format-string iedit-number-occurrence-counter))
-        (iedit-move-conjoined-overlays occurrence)
+        (iedit-move-conjoined-overlays (iedit-find-current-occurrence-overlay))
         (setq iedit-number-occurrence-counter
-              (1+ iedit-number-occurrence-counter))))))
+              (1+ iedit-number-occurrence-counter))
+        (goto-char (next-single-char-property-change (point) 'iedit-occurrence-overlay-name))
+        (goto-char (next-single-char-property-change (point) 'iedit-occurrence-overlay-name))))))
 
 
 ;;; help functions
@@ -813,7 +808,7 @@ Return nil if occurrence string is empty string."
     (dolist (overlay iedit-occurrences-overlays)
       (if (overlay-buffer overlay)
           (push overlay overlays)))
-    (setq iedit-occurrences-overlays (nreverse overlays))))
+    (setq iedit-occurrences-overlays overlays)))
 
 (defun iedit-printable (string)
   "Return a omitted substring that is not longer than 50.
