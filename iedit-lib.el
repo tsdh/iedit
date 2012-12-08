@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-12-07 23:16:43 Victor Ren>
+;; Time-stamp: <2012-12-08 23:35:32 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -50,6 +50,11 @@
   "*Face used for the occurrences' default values."
   :group 'iedit)
 
+(defface iedit-read-only-occurrence
+  '((t :inherit region))
+  "*Face used for the read-only occurrences' default values."
+  :group 'iedit)
+
 (defcustom iedit-case-sensitive-default t
   "If no-nil, matching is case sensitive."
   :type 'boolean
@@ -70,10 +75,16 @@ mode, set it as nil."
 
 (defvar iedit-occurrences-overlays nil
   "The occurrences slot contains a list of overlays used to
-indicate the position of each occurrence.  In addition, the
+indicate the position of each editable occurrence.  In addition, the
 occurrence overlay is used to provide a different face
-configurable via `iedit-occurrence-face'.  The list is sorted by
-the position of overlays.")
+configurable via `iedit-occurrence'.  The list is sorted by
+the position of overlays.")             ;todo remove sort
+
+(defvar iedit-read-only-occurrences-overlays nil
+  "The occurrences slot contains a list of overlays used to
+indicate the position of each read-only occurrence.  In addition, the
+occurrence overlay is used to provide a different face
+configurable via `iedit-ready-only-occurrence'.")
 
 (defvar iedit-case-sensitive iedit-case-sensitive-default
   "This is buffer local variable.
@@ -120,6 +131,7 @@ is not applied to other occurrences when it is true.")
   "The number of lines before or after the occurrence.")
 
 (make-variable-buffer-local 'iedit-occurrences-overlays)
+(make-variable-buffer-local 'iedit-read-only-occurrences-overlays)
 (make-variable-buffer-local 'iedit-unmatched-lines-invisible)
 (make-local-variable 'iedit-case-sensitive)
 (make-variable-buffer-local 'iedit-forward-success)
@@ -188,17 +200,23 @@ It should be set before occurrence overlay is created.")
 Return the number of occurrences."
   (setq iedit-aborting nil)
   (setq iedit-occurrences-overlays nil)
+  (setq iedit-read-only-occurrences-overlays nil)
   ;; Find and record each occurrence's markers and add the overlay to the occurrences
   (let ((counter 0)
         (case-fold-search (not iedit-case-sensitive)))
     (save-excursion
       (goto-char beg)
       (while (re-search-forward occurrence-regexp end t)
-        (push (iedit-make-occurrence-overlay (match-beginning 0) (match-end 0))
-              iedit-occurrences-overlays)
-        (setq counter (1+ counter)))
+        (let ((beginning (match-beginning 0))
+              (ending (match-end 0)))
+          (if (text-property-not-all beginning ending 'read-only nil)
+              (push (iedit-make-read-only-occurrence-overlay beginning ending)
+                    iedit-read-only-occurrences-overlays)
+            (push (iedit-make-occurrence-overlay beginning ending)
+                  iedit-occurrences-overlays))
+          (setq counter (1+ counter))))
       (message "%d matches for \"%s\"" counter (iedit-printable occurrence-regexp))
-      (when (/= 0 counter)
+      (when (/= 0 counter)              ;todo: remove nreverse
         (setq iedit-occurrences-overlays (nreverse iedit-occurrences-overlays))
         (if iedit-unmatched-lines-invisible
             (iedit-hide-unmatched-lines iedit-occurrence-context-lines))))
@@ -262,6 +280,7 @@ there are."
   (remove-overlays nil nil iedit-occurrence-overlay-name t)
   (iedit-show-all)
   (setq iedit-occurrences-overlays nil)
+  (setq iedit-read-only-occurrences-overlays nil)
   (setq iedit-aborting nil)
   (setq iedit-before-modification-string "")
   (setq iedit-before-modification-undo-list nil))
@@ -278,6 +297,13 @@ occurrences if the user starts typing."
     (overlay-put occurrence 'insert-in-front-hooks '(iedit-occurrence-update))
     (overlay-put occurrence 'insert-behind-hooks '(iedit-occurrence-update))
     (overlay-put occurrence 'modification-hooks '(iedit-occurrence-update))
+    occurrence))
+
+(defun iedit-make-read-only-occurrence-overlay (begin end)
+  "Create an overlay for an read-only occurrence in Iedit mode."
+  (let ((occurrence (make-overlay begin end (current-buffer) nil t)))
+    (overlay-put occurrence iedit-occurrence-overlay-name t)
+    (overlay-put occurrence 'face 'iedit-read-only-occurrence)
     occurrence))
 
 (defun iedit-make-unmatched-lines-overlay (begin end)
@@ -814,8 +840,9 @@ it just means mark is active."
        mark-active (not (equal (mark) (point)))))
 
 (defun iedit-barf-if-lib-active()
-  "Signal error if `iedit-occurrences-overlays' is not nil."
-  (or (null iedit-occurrences-overlays )
+  "Signal error if Iedit lib is active."
+  (or (and (null iedit-occurrences-overlays)
+           (null iedit-read-only-occurrences-overlays))
       (error "Iedit lib is active.")))
 
 (provide 'iedit-lib)

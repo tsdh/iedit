@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-10-22 14:01:57 Victor Ren>
+;; Time-stamp: <2012-12-08 23:40:48 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.97
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -285,6 +285,32 @@ fob")))))
    barfoo
    1")))))
 
+(ert-deftest iedit-occurrence-update-with-read-only-test ()
+  (with-iedit-test-fixture
+"foo
+  foo
+   barfoo
+   foo"
+   (lambda ()
+     (iedit-mode)
+     (put-text-property 1 2 'read-only t)
+     (iedit-mode)
+     (goto-char 2)
+     (should-error (insert "1"))
+     (should (string= (buffer-string)
+"foo
+  foo
+   barfoo
+   foo"))
+     (goto-char 7)
+     (insert "1")
+     (should (string= (buffer-string)
+"foo
+  1foo
+   barfoo
+   1foo"))
+     )))
+
 (ert-deftest iedit-aborting-test ()
   (with-iedit-test-fixture
 "foo
@@ -420,12 +446,12 @@ fob")))))
   barfoo
     foo"
    (lambda ()
-   (iedit-mode)
-   (set-mark-command nil)
-   (forward-char 3)
-   (forward-line 3)
-   (iedit-rectangle-mode)
-   (should (equal iedit-rectangle '(1 19))))))
+     (iedit-mode)
+     (set-mark-command nil)
+     (forward-char 3)
+     (forward-line 3)
+     (iedit-rectangle-mode)
+     (should (equal iedit-rectangle '(1 19))))))
 
 (ert-deftest iedit-kill-rectangle-error-test ()
   (with-iedit-test-fixture
@@ -434,16 +460,16 @@ fob")))))
   barfoo
     foo"
    (lambda ()
-   (iedit-mode)
-   (set-mark-command nil)
-   (goto-char 22)
-   (iedit-rectangle-mode)
-   (should (iedit-same-column))
-   (should (equal iedit-rectangle '(1 22)))
-   (iedit-prev-occurrence)
-   (delete-char -1)
-   (should (not (iedit-same-column)))
-   (should-error (iedit-kill-rectangle)))))
+     (iedit-mode)
+     (set-mark-command nil)
+     (goto-char 22)
+     (iedit-rectangle-mode)
+     (should (iedit-same-column))
+     (should (equal iedit-rectangle '(1 22)))
+     (iedit-prev-occurrence)
+     (delete-char -1)
+     (should (not (iedit-same-column)))
+     (should-error (iedit-kill-rectangle)))))
 
 (ert-deftest iedit-kill-rectangle-test ()
   (with-iedit-test-fixture
@@ -531,14 +557,22 @@ abcd" "12345678901234567890123456789012345678901234567890...")))
     (should (string= (iedit-printable (car test)) (cadr test)))))
 
 
-;; (elp-instrument-list '(insert-and-inherit
-;;                        delete-region
-;;                        goto-char
-;;                        iedit-occurrence-update
-;;                        buffer-substring-no-properties
-;;                        string=
+;; (elp-instrument-list '(;; insert-and-inherit
+;;                        ;; delete-region
+;;                        ;; goto-char
+;;                        ;; iedit-occurrence-update
+;;                        ;; buffer-substring-no-properties
+;;                        ;; string=
 ;;                        re-search-forward
-;;                        replace-match))
+;;                        ;; replace-match
+;;                        text-property-not-all
+;;                        iedit-make-occurrence-overlay
+;;                        nreverse
+;;                        iedit-make-occurrences-overlays
+;;                        match-beginning
+;;                        match-end
+;;                        push
+;;                        ))
 
 
 ;;; iedit-tests.el ends here
