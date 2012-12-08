@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-10-22 14:14:53 Victor Ren>
+;; Time-stamp: <2012-12-08 14:17:05 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -422,8 +422,7 @@ the initial string globally."
             (end (region-end)))
         (if (null (iedit-find-overlay beg end 'iedit-occurrence-overlay-name arg))
             (iedit-done)
-          (iedit-restrict-region beg end arg)
-          (iedit-first-occurrence)))
+          (iedit-restrict-region beg end arg)))
     (iedit-done)))
 
 
