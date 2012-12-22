@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-12-22 21:56:48 Victor Ren>
+;; Time-stamp: <2012-12-22 23:41:03 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -239,7 +239,7 @@ Return the number of occurrences."
           (message "No matches.")
         (if (or (iedit-find-overlay-at-point (match-beginning 0) 'iedit-occurrence-overlay-name)
                 (iedit-find-overlay-at-point (match-end 0) 'iedit-occurrence-overlay-name))
-            (error "Conflict region."))
+            (error "Conflict region"))
         (push (iedit-make-occurrence-overlay (match-beginning 0)
                                              (match-end 0))
               iedit-occurrences-overlays)
@@ -258,10 +258,10 @@ there are."
        (iedit-make-occurrence-overlay beg end)
        iedit-occurrences-overlays)
     (or (= (- end beg) (iedit-occurrence-string-length))
-        (error "Wrong region."))
+        (error "Wrong region"))
     (if (or (iedit-find-overlay-at-point beg 'iedit-occurrence-overlay-name)
             (iedit-find-overlay-at-point end 'iedit-occurrence-overlay-name))
-        (error "Conflict region."))
+        (error "Conflict region"))
     (push (iedit-make-occurrence-overlay beg end)
           iedit-occurrences-overlays)
     )) ;; todo test this function
@@ -831,7 +831,7 @@ it just means mark is active."
   "Signal error if Iedit lib is active."
   (or (and (null iedit-occurrences-overlays)
            (null iedit-read-only-occurrences-overlays))
-      (error "Iedit lib is active.")))
+      (error "Iedit lib is active")))
 
 (provide 'iedit-lib)
 
