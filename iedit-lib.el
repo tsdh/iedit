@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-12-09 00:42:28 Victor Ren>
+;; Time-stamp: <2012-12-22 21:56:48 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -166,7 +166,6 @@ is not applied to other occurrences when it is true.")
     (define-key map (kbd "M-SPC") 'iedit-blank-occurrences)
     (define-key map (kbd "M-D") 'iedit-delete-occurrences)
     (define-key map (kbd "M-N") 'iedit-number-occurrences)
-    (define-key map (kbd "M-;") 'iedit-apply-global-modification)
     (define-key map (kbd "M-B") 'iedit-toggle-buffering)
     (define-key map (kbd "M-<") 'iedit-first-occurrence)
     (define-key map (kbd "M->") 'iedit-last-occurrence)
@@ -188,7 +187,6 @@ It should be set before occurrence overlay is created.")
                    (substitute-command-keys "\\[iedit-blank-occurrences]") ":blank "
                    (substitute-command-keys "\\[iedit-delete-occurrences]") ":delete "
                    (substitute-command-keys "\\[iedit-number-occurrences]") ":number "
-                   (substitute-command-keys "\\[iedit-apply-global-modification]") ":redo "
                    (substitute-command-keys "\\[iedit-toggle-buffering]") ":buffering "
                    (substitute-command-keys "\\[iedit-first-occurrence]") "/"
                    (substitute-command-keys "\\[iedit-last-occurrence]") ":first/last "
@@ -645,11 +643,6 @@ modification is not going to be applied to other occurrences."
                 (iedit-move-conjoined-overlays occurrence))))
           (goto-char (+ (overlay-start ov) offset))))))
   (setq iedit-buffering nil)
-  ;; (setq iedit-mode (propertize
-  ;;                   (concat (if iedit-rectangle " Iedit-RECT:" " Iedit:")
-  ;;                           (number-to-string (length iedit-occurrences-overlays)))
-  ;;                   'face 'font-lock-warning-face))
-  ;; (force-mode-line-update)
   (message "Buffered modification applied.")
   (setq iedit-before-modification-undo-list nil))
 

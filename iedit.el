@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-12-08 23:57:42 Victor Ren>
+;; Time-stamp: <2012-12-22 21:59:17 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -223,6 +223,7 @@ This is like `describe-bindings', but displays only Iedit keys."
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map iedit-occurrence-keymap-default)
     (define-key map (kbd "M-H") 'iedit-restrict-function)
+    (define-key map (kbd "M-G") 'iedit-apply-global-modification)
     (define-key map (kbd "M-C") 'iedit-toggle-case-sensitive)
     map)
   "Keymap used within overlays in Iedit mode.")
@@ -489,8 +490,7 @@ the initial string globally."
   (force-mode-line-update))
 
 (defun iedit-toggle-case-sensitive ()
-  "Toggle case-sensitive matching occurrences.
-Todo: how about region"
+  "Toggle case-sensitive matching occurrences. "
   (interactive)
   (setq iedit-case-sensitive (not iedit-case-sensitive))
   (if iedit-buffering
