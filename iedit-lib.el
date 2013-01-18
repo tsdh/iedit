@@ -769,12 +769,14 @@ This function is supposed to be called in overlay keymap."
 (defun iedit-current-occurrence-string ()
   "Return current occurrence string.
 Return nil if occurrence string is empty string."
-  (let* ((ov (or (iedit-find-current-occurrence-overlay)
-                 (car iedit-occurrences-overlays)))
-         (beg (overlay-start ov))
-         (end (overlay-end ov)))
-    (if (and ov (/=  beg end))
-        (buffer-substring-no-properties beg end)
+  (let ((ov (or (iedit-find-current-occurrence-overlay)
+                 (car iedit-occurrences-overlays))))
+    (if ov
+        (let ((beg (overlay-start ov))
+              (end (overlay-end ov)))
+          (if (and ov (/=  beg end))
+              (buffer-substring-no-properties beg end)
+            nil))
       nil)))
 
 (defun iedit-occurrence-string-length ()
