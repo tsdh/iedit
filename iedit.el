@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-12-22 21:59:17 Victor Ren>
+;; Time-stamp: <2013-01-02 23:21:38 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -33,7 +33,7 @@
 ;;
 ;; Normal scenario of iedit-mode is like:
 ;;
-;; - Highlight certain contents - by press C-;
+;; - Highlight certain contents - by press C-; (The default binding)
 ;;   All occurrences of a symbol, string in the buffer or a region may be
 ;;   highlighted corresponding to current mark, point and prefix argument.
 ;;   Refer to the document of `iedit-mode' for details.
@@ -234,6 +234,7 @@ This is like `describe-bindings', but displays only Iedit keys."
     (define-key map (char-to-string help-char) iedit-help-map)
     (define-key map [help] iedit-help-map)
     (define-key map [f1] iedit-help-map)
+    (define-key map (kbd "M-;") 'iedit-toggle-selection)
     map)
   "Keymap used while Iedit mode is enabled.")
 
@@ -462,6 +463,22 @@ the initial string globally."
       (iedit-replace-occurrences iedit-last-occurrence-global)
     (message "No global modification available.")))
 
+(defun iedit-toggle-selection ()
+  "Select or deselect the occurrence under point."
+  (interactive)
+  (iedit-barf-if-buffering)
+  (let ((ov (iedit-find-current-occurrence-overlay)))
+    (if ov
+        (iedit-restrict-region (overlay-start ov) (overlay-end ov) t)
+      (goto-char (if (> (point)(length iedit-initial-string-local))
+                     ( - (point) (length iedit-initial-string-local))
+                   (point-min)))
+      (iedit-add-next-occurrence-overlay (iedit-regexp-quote iedit-initial-string-local))
+      (setq iedit-mode (propertize
+                    (concat " Iedit:" (number-to-string
+                                       (length iedit-occurrences-overlays)))
+                    'face 'font-lock-warning-face))
+      (force-mode-line-update))))
 
 (defun iedit-restrict-function(&optional arg)
   "Restricting Iedit mode in current function."

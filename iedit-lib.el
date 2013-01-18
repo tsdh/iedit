@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-12-22 23:41:03 Victor Ren>
+;; Time-stamp: <2012-12-22 23:52:42 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -548,17 +548,20 @@ value of `iedit-occurrence-context-lines' is used for this time."
 (defun iedit-upcase-occurrences ()
   "Covert occurrences to upper case."
   (interactive "*")
+  (iedit-barf-if-buffering)
   (iedit-apply-on-occurrences 'upcase-region))
 
 (defun iedit-downcase-occurrences()
   "Covert occurrences to lower case."
   (interactive "*")
+  (iedit-barf-if-buffering)
   (iedit-apply-on-occurrences 'downcase-region))
 
 (defun iedit-replace-occurrences(to-string)
   "Replace occurrences with STRING.
 This function preserves case."
   (interactive "*sReplace with: ")
+  (iedit-barf-if-buffering)
   (let* ((ov (iedit-find-current-occurrence-overlay))
          (offset (- (point) (overlay-start ov)))
          (from-string (downcase (buffer-substring-no-properties
@@ -575,6 +578,7 @@ This function preserves case."
 (defun iedit-blank-occurrences()
   "Replace occurrences with blank spaces."
   (interactive "*")
+  (iedit-barf-if-buffering)
   (let* ((ov (car iedit-occurrences-overlays))
          (offset (- (point) (overlay-start ov)))
          (count (- (overlay-end ov) (overlay-start ov))))
@@ -588,6 +592,7 @@ This function preserves case."
 (defun iedit-delete-occurrences()
   "Delete occurrences."
   (interactive "*")
+  (iedit-barf-if-buffering)
   (iedit-apply-on-occurrences 'delete-region))
 
 ;; todo: add cancel buffering function
@@ -691,6 +696,7 @@ FORMAT."
                             (iedit-default-occurrence-number-format
                              start-at))))
      (list 1 nil)))
+  (iedit-barf-if-buffering)
   (unless format-string
     (setq format-string (iedit-default-occurrence-number-format start-at)))
   (let ((iedit-number-occurrence-counter start-at)
@@ -832,6 +838,11 @@ it just means mark is active."
   (or (and (null iedit-occurrences-overlays)
            (null iedit-read-only-occurrences-overlays))
       (error "Iedit lib is active")))
+
+(defun iedit-barf-if-buffering()
+  "Signal error if Iedit lib is buffering."
+  (or  (null iedit-buffering)
+      (error "Iedit is buffering")))
 
 (provide 'iedit-lib)
 
