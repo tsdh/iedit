@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-01-19 21:32:53 Victor Ren>
+;; Time-stamp: <2013-01-19 22:18:17 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.97
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -599,22 +599,33 @@ abcd" "12345678901234567890123456789012345678901234567890...")))
   "Test function iedit-hide-unmatched-lines."
   (with-iedit-test-fixture
    "foo
+foo
 a
-  foo
-a
-a
-barfoo
+  foo bar
 a
 a
+bar foo
 a
 a
- foo"
+a
+bar foo
+a
+a
+a
+a
+ foo bar
+a
+a
+a
+a
+a
+foo"
    (lambda ()
-     (should (equal (iedit-hide-unmatched-lines 0) nil))
+     (should (equal (iedit-hide-unmatched-lines 0) '((64 73) (47 54) (33 38) (21 24) (9 10))))
      (iedit-show-all)
-     (should (equal (iedit-hide-unmatched-lines 1) '((14 29))))
+     (should (equal (iedit-hide-unmatched-lines 1) '((66 71) (49 52) (35 36))))
      (iedit-show-all)
-     (should (equal (iedit-hide-unmatched-lines 2) '((6 8))))
+     (should (equal (iedit-hide-unmatched-lines 2) '((68 69)) ))
      (iedit-show-all)
      (should (equal (iedit-hide-unmatched-lines 3) nil)))))
 

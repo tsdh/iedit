@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-01-19 00:31:41 Victor Ren>
+;; Time-stamp: <2013-01-19 22:00:41 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -519,20 +519,19 @@ value of `iedit-occurrence-context-lines' is used for this time."
     (save-excursion
       (iedit-first-occurrence)
       (while (/= (point) (point-max))
+        ;; Now at the beginning of an occurrence
         (let ((current-start (point)))
           (forward-line (- context-lines))
           (let ((line-beginning (line-beginning-position)))
             (if (> line-beginning prev-occurrence-end)
-                (push  (list prev-occurrence-end (1- line-beginning)) unmatched-lines)))        
-          (goto-char current-start))
-        ;; goto the end of the occurrence
-        (goto-char (next-single-char-property-change (point) 'iedit-occurrence-overlay-name))
+                (push  (list prev-occurrence-end (1- line-beginning)) unmatched-lines)))
+          ;; goto the end of the occurrence
+          (goto-char (next-single-char-property-change current-start 'iedit-occurrence-overlay-name)))
         (let ((current-end (point)))
           (forward-line context-lines)
           (setq prev-occurrence-end (1+ (line-end-position)))
-          (goto-char current-end))
-        ;; goto the beginning of next occurrence
-        (goto-char (next-single-char-property-change (point) 'iedit-occurrence-overlay-name)))
+          ;; goto the beginning of next occurrence
+          (goto-char (next-single-char-property-change current-end 'iedit-occurrence-overlay-name))))
       (if (< prev-occurrence-end (point-max))
           (push (list prev-occurrence-end (point-max)) unmatched-lines))
       (when unmatched-lines
