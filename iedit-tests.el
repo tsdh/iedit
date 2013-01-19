@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-01-18 17:30:39 Victor Ren>
+;; Time-stamp: <2013-01-19 21:32:53 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.97
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -536,7 +536,7 @@ arfoo
 "a
 (defun foo (foo bar foo)
 \"foo bar foobar\" nil)
-(defun bar (bar foo bar)
+ (defun bar (bar foo bar)
   \"bar foo barfoo\" nil)"
    (lambda ()
       (iedit-mode)
@@ -560,7 +560,7 @@ arfoo
 "a
 (defun foo (foo bar foo)
 \"foo bar foobar\" nil)
-(defun bar (bar foo bar)
+ (defun bar (bar foo bar)
   \"bar foo barfoo\" nil)"
    (lambda ()
       (iedit-mode)
@@ -595,6 +595,28 @@ abcd" "12345678901234567890123456789012345678901234567890...")))
   (dolist (test iedit-printable-test-lists)
     (should (string= (iedit-printable (car test)) (cadr test)))))
 
+(ert-deftest iedit-hide-unmatched-lines-test ()
+  "Test function iedit-hide-unmatched-lines."
+  (with-iedit-test-fixture
+   "foo
+a
+  foo
+a
+a
+barfoo
+a
+a
+a
+a
+ foo"
+   (lambda ()
+     (should (equal (iedit-hide-unmatched-lines 0) nil))
+     (iedit-show-all)
+     (should (equal (iedit-hide-unmatched-lines 1) '((14 29))))
+     (iedit-show-all)
+     (should (equal (iedit-hide-unmatched-lines 2) '((6 8))))
+     (iedit-show-all)
+     (should (equal (iedit-hide-unmatched-lines 3) nil)))))
 
 ;; (elp-instrument-list '(;; insert-and-inherit
 ;;                        ;; delete-region

@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2012-12-22 23:52:42 Victor Ren>
+;; Time-stamp: <2013-01-19 00:31:41 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -535,7 +535,8 @@ value of `iedit-occurrence-context-lines' is used for this time."
         (set (make-local-variable 'line-move-ignore-invisible) t)
         (add-to-invisibility-spec '(iedit-invisible-overlay-name . t))
         (dolist (unmatch unmatched-lines)
-          (iedit-make-unmatched-lines-overlay (car unmatch) (cadr unmatch)))))))
+          (iedit-make-unmatched-lines-overlay (car unmatch) (cadr unmatch)))))
+    unmatched-lines))
 
 ;;;; functions for overlay keymap
 (defun iedit-apply-on-occurrences (function &rest args)
