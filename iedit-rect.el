@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-01-18 17:24:41 Victor Ren>
+;; Time-stamp: <2013-02-04 01:35:54 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -116,21 +116,24 @@ Commands:
       (when (< end-col beg-col)
         (rotatef beg-col end-col))
       (goto-char beg)
-      (loop do (progn
-                 (push (iedit-make-occurrence-overlay
-                        (progn
-                          (move-to-column beg-col t)
-                          (point))
-                        (progn
-                          (move-to-column end-col t)
-                          (point)))
-                       iedit-occurrences-overlays)
-                 (forward-line 1))
-            until (> (point) end))))
+      (while
+          (progn
+            (push (iedit-make-occurrence-overlay
+                   (progn
+                     (move-to-column beg-col t)
+                     (point))
+                   (progn
+                     (move-to-column end-col t)
+                     (point)))
+                  iedit-occurrences-overlays)
+            (and (< (point) end) (forward-line 1))))))
   (setq iedit-rectangle (list beg end))
-  (setq iedit-rectangle-mode (propertize
-                    (concat " Iedit-rect:" (number-to-string (length iedit-occurrences-overlays)))
-                    'face 'font-lock-warning-face))
+  (setq iedit-rectangle-mode
+        (propertize
+         (concat " Iedit-rect:"
+                 (number-to-string (length iedit-occurrences-overlays)))
+         'face
+         'font-lock-warning-face))
   (force-mode-line-update)
   (add-hook 'kbd-macro-termination-hook 'iedit-rectangle-done nil t)
   (add-hook 'change-major-mode-hook 'iedit-rectangle-done nil t)
