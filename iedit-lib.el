@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-01-19 22:00:41 Victor Ren>
+;; Time-stamp: <2013-02-03 15:25:22 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -71,6 +71,11 @@ It means Iedit works as expected only when regions are
 highlighted.  If you want to use iedit without Transient Mark
 mode, set it as nil."
   :type 'boolean
+  :group 'iedit)
+
+(defcustom iedit-overlay-priority 200
+  "The priority of the overlay used to indicate matches."
+  :type 'integer
   :group 'iedit)
 
 (defvar iedit-occurrences-overlays nil
@@ -288,6 +293,7 @@ occurrences if the user starts typing."
     (overlay-put occurrence 'insert-in-front-hooks '(iedit-occurrence-update))
     (overlay-put occurrence 'insert-behind-hooks '(iedit-occurrence-update))
     (overlay-put occurrence 'modification-hooks '(iedit-occurrence-update))
+    (overlay-put occurrence 'priority iedit-overlay-priority)
     occurrence))
 
 (defun iedit-make-read-only-occurrence-overlay (begin end)
