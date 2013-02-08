@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-02-03 15:25:22 Victor Ren>
+;; Time-stamp: <2013-02-08 22:09:19 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -172,8 +172,8 @@ is not applied to other occurrences when it is true.")
     (define-key map (kbd "M-D") 'iedit-delete-occurrences)
     (define-key map (kbd "M-N") 'iedit-number-occurrences)
     (define-key map (kbd "M-B") 'iedit-toggle-buffering)
-    (define-key map (kbd "M-<") 'iedit-first-occurrence)
-    (define-key map (kbd "M->") 'iedit-last-occurrence)
+    (define-key map (kbd "M-<") 'iedit-goto-first-occurrence)
+    (define-key map (kbd "M->") 'iedit-goto-last-occurrence)
     (define-key map (kbd "C-?") 'iedit-help-for-occurrences)
     map)
   "Default keymap used within occurrence overlays.")
@@ -193,8 +193,8 @@ It should be set before occurrence overlay is created.")
                    (substitute-command-keys "\\[iedit-delete-occurrences]") ":delete "
                    (substitute-command-keys "\\[iedit-number-occurrences]") ":number "
                    (substitute-command-keys "\\[iedit-toggle-buffering]") ":buffering "
-                   (substitute-command-keys "\\[iedit-first-occurrence]") "/"
-                   (substitute-command-keys "\\[iedit-last-occurrence]") ":first/last "
+                   (substitute-command-keys "\\[iedit-goto-first-occurrence]") "/"
+                   (substitute-command-keys "\\[iedit-goto-last-occurrence]") ":first/last "
                    )))
 
 (defun iedit-make-occurrences-overlays (occurrence-regexp beg end)
@@ -465,26 +465,33 @@ the buffer."
     (when iedit-forward-success
       (goto-char pos))))
 
-(defun iedit-first-occurrence ()
+(defun iedit-goto-first-occurrence ()
   "Move to the first occurrence."
   (interactive)
-  (let ((pos (if (get-char-property (point-min) 'iedit-occurrence-overlay-name)
-                 (point-min)
-               (next-single-char-property-change
-                (point-min) 'iedit-occurrence-overlay-name))))
-    (setq iedit-forward-success t)
-    (goto-char pos)
-    (message "Located the first occurrence.")))
+  (goto-char (iedit-first-occurrence))
+  (setq iedit-forward-success t)
+  (message "Located the first occurrence."))
 
-(defun iedit-last-occurrence ()
+(defun iedit-first-occurrence ()
+  "return the position of the first occurrence."
+  (if (get-char-property (point-min) 'iedit-occurrence-overlay-name)
+      (point-min)
+    (next-single-char-property-change
+     (point-min) 'iedit-occurrence-overlay-name)))
+
+(defun iedit-goto-last-occurrence ()
   "Move to the last occurrence."
   (interactive)
+  (goto-char (iedit-last-occurrence))
+  (setq iedit-forward-success t)
+  (message "Located the last occurrence."))
+
+(defun iedit-last-occurrence ()
+  "return the position of the last occurrence."
   (let ((pos (previous-single-char-property-change (point-max) 'iedit-occurrence-overlay-name)))
     (if (not (get-char-property (- (point-max) 1) 'iedit-occurrence-overlay-name))
         (setq pos (previous-single-char-property-change pos 'iedit-occurrence-overlay-name)))
-    (setq iedit-forward-success t)
-    (goto-char pos)
-    (message "Located the last occurrence.")))
+    pos))
 
 (defun iedit-toggle-unmatched-lines-visible (&optional arg)
   "Toggle whether to display unmatched lines.
@@ -523,7 +530,7 @@ value of `iedit-occurrence-context-lines' is used for this time."
   (let ((prev-occurrence-end 1)
         (unmatched-lines nil))
     (save-excursion
-      (iedit-first-occurrence)
+      (goto-char (iedit-first-occurrence))
       (while (/= (point) (point-max))
         ;; Now at the beginning of an occurrence
         (let ((current-start (point)))
@@ -712,7 +719,7 @@ FORMAT."
   (let ((iedit-number-occurrence-counter start-at)
         (inhibit-modification-hooks t))
     (save-excursion
-      (iedit-first-occurrence)
+      (goto-char (iedit-first-occurrence))
       (while (/= (point) (point-max))
         (insert (format format-string iedit-number-occurrence-counter))
         (iedit-move-conjoined-overlays (iedit-find-current-occurrence-overlay))

@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-02-04 01:35:54 Victor Ren>
+;; Time-stamp: <2013-02-09 00:55:45 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -158,12 +158,9 @@ The behavior is the same as `kill-rectangle' in rect mode."
   (interactive "*P")
   (or (and iedit-rectangle (iedit-same-column))
       (error "Not a rectangle"))
-  (let ((inhibit-modification-hooks t)
-        (beg (overlay-start (progn (iedit-first-occurrence)
-                                   (iedit-find-current-occurrence-overlay))))
-        (end (overlay-end (progn (iedit-last-occurrence)
-                                 (iedit-find-current-occurrence-overlay)))))
-    (kill-rectangle beg end fill)))
+  (let ((inhibit-modification-hooks t))
+    (kill-rectangle (marker-position (car iedit-rectangle))
+                    (marker-position (cadr iedit-rectangle)) fill)))
 
 (provide 'iedit-rect)
 

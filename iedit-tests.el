@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-02-01 00:10:47 Victor Ren>
+;; Time-stamp: <2013-02-09 00:54:03 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.97
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -244,9 +244,9 @@ fob")))))
    barfoo
    foo "
    (lambda ()
-     (iedit-last-occurrence)
+     (iedit-goto-last-occurrence)
      (should (= (point) 24))
-     (iedit-first-occurrence)
+     (iedit-goto-first-occurrence)
      (should (= (point) 1))
      (iedit-next-occurrence)
      (should (= (point) 7))
