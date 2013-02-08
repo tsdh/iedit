@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-01-02 23:21:38 Victor Ren>
+;; Time-stamp: <2013-02-08 21:48:50 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -366,7 +366,7 @@ Keymap used within overlays:
       (iedit-cleanup))
     (iedit-start regexp (point-min) (point-max))
     ;; TODO: reconsider how to avoid the loop in iedit-same-length
-    (cond ((not iedit-occurrences-overlays) 
+    (cond ((not iedit-occurrences-overlays)
            (message "No matches found")
            (iedit-done))
           ((not (iedit-same-length))
@@ -475,15 +475,19 @@ the initial string globally."
   (let ((ov (iedit-find-current-occurrence-overlay)))
     (if ov
         (iedit-restrict-region (overlay-start ov) (overlay-end ov) t)
-      (goto-char (if (> (point)(length iedit-initial-string-local))
-                     ( - (point) (length iedit-initial-string-local))
-                   (point-min)))
-      (iedit-add-next-occurrence-overlay (iedit-regexp-quote iedit-initial-string-local))
-      (setq iedit-mode (propertize
-                    (concat " Iedit:" (number-to-string
-                                       (length iedit-occurrences-overlays)))
-                    'face 'font-lock-warning-face))
-      (force-mode-line-update))))
+      (let ((current-occurrence-string (iedit-current-occurrence-string)))
+        (when (not (null current-occurrence-string))
+          (save-excursion
+            (goto-char (if (> (point) (length current-occurrence-string))
+                           ( - (point) (length current-occurrence-string))
+                         (point-min)))
+            (iedit-add-next-occurrence-overlay
+             (iedit-regexp-quote current-occurrence-string)))
+          (setq iedit-mode (propertize
+                            (concat " Iedit:" (number-to-string
+                                               (length iedit-occurrences-overlays)))
+                            'face 'font-lock-warning-face))
+          (force-mode-line-update))))))
 
 (defun iedit-restrict-function(&optional arg)
   "Restricting Iedit mode in current function."
