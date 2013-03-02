@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-02-11 22:27:12 Victor Ren>
+;; Time-stamp: <2013-03-02 22:41:36 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -206,23 +206,25 @@ Return the number of occurrences."
   (let ((counter 0)
         (case-fold-search (not iedit-case-sensitive)))
     (save-excursion
-      (goto-char end)
-      (recenter)
-      (goto-char beg)
-      (while (re-search-forward occurrence-regexp end t)
-        (let ((beginning (match-beginning 0))
-              (ending (match-end 0)))
-          (if (text-property-not-all beginning ending 'read-only nil)
-              (push (iedit-make-read-only-occurrence-overlay beginning ending)
-                    iedit-read-only-occurrences-overlays)
-            (push (iedit-make-occurrence-overlay beginning ending)
-                  iedit-occurrences-overlays))
-          (setq counter (1+ counter))))
-      (message "%d matches for \"%s\"" counter (iedit-printable occurrence-regexp))
-      (when (/= 0 counter)
-        (if iedit-unmatched-lines-invisible
-            (iedit-hide-unmatched-lines iedit-occurrence-context-lines))))
-    counter))
+      (save-window-excursion
+        (goto-char end)
+        ;; todo: figure out why re-search-forward is slow without "recenter"
+        (recenter)
+        (goto-char beg)
+        (while (re-search-forward occurrence-regexp end t)
+          (let ((beginning (match-beginning 0))
+                (ending (match-end 0)))
+            (if (text-property-not-all beginning ending 'read-only nil)
+                (push (iedit-make-read-only-occurrence-overlay beginning ending)
+                      iedit-read-only-occurrences-overlays)
+              (push (iedit-make-occurrence-overlay beginning ending)
+                    iedit-occurrences-overlays))
+            (setq counter (1+ counter))))
+        (message "%d matches for \"%s\"" counter (iedit-printable occurrence-regexp))
+        (when (/= 0 counter)
+          (if iedit-unmatched-lines-invisible
+              (iedit-hide-unmatched-lines iedit-occurrence-context-lines))))
+      counter)))
 
 (defun iedit-add-next-occurrence-overlay (occurrence-exp &optional point)
   "Create next occurrence overlay for `occurrence-exp'."
