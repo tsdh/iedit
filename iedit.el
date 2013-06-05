@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-06-04 14:25:26 Victor Ren>
+;; Time-stamp: <2013-06-05 14:18:33 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -357,6 +357,8 @@ Keymap used within overlays:
 
 (defun iedit-mode-from-isearch (regexp)
   "Start Iedit mode using last search string as the regexp."
+  (or isearch-success
+      (error "No match" ))
   (interactive
    (let ((regexp (cond
                   ((functionp isearch-word)
@@ -424,7 +426,8 @@ the initial string globally."
   (setq iedit-last-occurrence-local (iedit-current-occurrence-string))
   (setq iedit-last-occurrence-global iedit-last-occurrence-local)
   (setq iedit-last-initial-string-global iedit-initial-string-local)
-  (kill-new iedit-last-occurrence-local) ; Make occurrence the latest kill in the kill ring.
+  (if iedit-last-occurrence-local
+      (kill-new iedit-last-occurrence-local)) ; Make occurrence the latest kill in the kill ring.
   (setq iedit-num-lines-to-expand-up 0)
   (setq iedit-num-lines-to-expand-down 0)
 

@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-03-02 22:41:36 Victor Ren>
+;; Time-stamp: <2013-06-05 14:22:21 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -244,7 +244,7 @@ Return the number of occurrences."
       (if (not (if forward
                    (re-search-forward occurrence-exp nil t)
                  (re-search-backward occurrence-exp nil t)))
-          (message "No matches.")
+          (message "No match")
         (if (or (iedit-find-overlay-at-point (match-beginning 0) 'iedit-occurrence-overlay-name)
                 (iedit-find-overlay-at-point (match-end 0) 'iedit-occurrence-overlay-name))
             (error "Conflict region"))

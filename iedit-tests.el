@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-02-09 00:54:03 Victor Ren>
+;; Time-stamp: <2013-02-26 13:36:47 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.97
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -635,21 +635,22 @@ foo"
      (iedit-show-all)
      (should (equal (iedit-hide-unmatched-lines 3) nil)))))
 
-;; (elp-instrument-list '(;; insert-and-inherit
-;;                        ;; delete-region
-;;                        ;; goto-char
-;;                        ;; iedit-occurrence-update
-;;                        ;; buffer-substring-no-properties
-;;                        ;; string=
-;;                        re-search-forward
-;;                        ;; replace-match
-;;                        text-property-not-all
-;;                        iedit-make-occurrence-overlay
-;;                        iedit-make-occurrences-overlays
-;;                        match-beginning
-;;                        match-end
-;;                        push
-;;                        ))
+;; todo add a auto performance test
+(setq elp-function-list '(;; insert-and-inherit
+                       ;; delete-region
+                       ;; goto-char
+                       ;; iedit-occurrence-update
+                       ;; buffer-substring-no-properties
+                       ;; string=
+                       re-search-forward
+                       ;; replace-match
+                       text-property-not-all
+                       iedit-make-occurrence-overlay
+                       iedit-make-occurrences-overlays
+                       match-beginning
+                       match-end
+                       push
+                       ))
 
 
 ;;; iedit-tests.el ends here
