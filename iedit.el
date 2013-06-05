@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-06-05 14:18:33 Victor Ren>
+;; Time-stamp: <2013-06-05 14:34:44 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -357,8 +357,6 @@ Keymap used within overlays:
 
 (defun iedit-mode-from-isearch (regexp)
   "Start Iedit mode using last search string as the regexp."
-  (or isearch-success
-      (error "No match" ))
   (interactive
    (let ((regexp (cond
                   ((functionp isearch-word)
@@ -367,6 +365,8 @@ Keymap used within overlays:
                   (isearch-regexp isearch-string)
                   (t (regexp-quote isearch-string)))))
      (list regexp)))
+  (or isearch-success
+      (error "No match" ))
   (if (or isearch-regexp isearch-word)
       nil
     (setq iedit-initial-string-local isearch-string))
