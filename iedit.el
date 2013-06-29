@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-06-05 14:34:44 Victor Ren>
+;; Time-stamp: <2013-06-29 16:33:38 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -140,12 +140,17 @@ point should be included in the replacement region.")
   "This is a global variable indicating how many lines down from
 point should be included in the replacement region.")
 
+(defvar iedit-current-symbol '(lambda () (current-word t))
+  "This is a function which returns a string as occurrence candidate.
+This local buffer varialbe can be configured in some modes.
+An example of how to use this variable: todo")
+
 (make-variable-buffer-local 'iedit-mode)
 (make-variable-buffer-local 'iedit-only-complete-symbol-local)
 (make-variable-buffer-local 'iedit-last-occurrence-local)
 (make-variable-buffer-local 'iedit-initial-string-local)
 (make-variable-buffer-local 'iedit-initial-region)
-
+(make-variable-buffer-local 'iedit-current-symbol)
 
 (or (assq 'iedit-mode minor-mode-alist)
     (nconc minor-mode-alist
@@ -271,11 +276,11 @@ highlighted.  If one occurrence is modified, the change are
 propagated to all other occurrences simultaneously.
 
 If region is not active, the current symbol (returns from
-`current-word') is used as the occurrence by default.  The
-occurrences of the current symbol, but not include occurrences
-that are part of other symbols, are highlighted.  If you still
-want to match all the occurrences, even though they are parts of
-other symbols, you may have to mark the symbol first.
+`iedit-current-symbol') is used as the occurrence by default.
+The occurrences of the current symbol, but not include
+occurrences that are part of other symbols, are highlighted.  If
+you still want to match all the occurrences, even though they are
+parts of other symbols, you may have to mark the symbol first.
 
 In the above two situations, with digit prefix argument 0, only
 occurrences in current function are matched.  This is good for
@@ -335,8 +340,8 @@ Keymap used within overlays:
             ((iedit-region-active)
              (setq occurrence  (buffer-substring-no-properties
                                 (mark) (point))))
-            ((and iedit-current-symbol-default (current-word t))
-             (setq occurrence  (current-word))
+            ((and iedit-current-symbol-default
+                  (setq occurrence (funcall iedit-current-symbol)))
              (when iedit-only-at-symbol-boundaries
                (setq complete-symbol t)))
             (t (error "No candidate of the occurrence, cannot enable Iedit mode")))
