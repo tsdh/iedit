@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-06-29 16:33:38 Victor Ren>
+;; Time-stamp: <2013-10-07 11:26:05 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -398,7 +398,9 @@ Keymap used within overlays:
   (setq iedit-skip-modification-once t)
   (setq iedit-unmatched-lines-invisible iedit-unmatched-lines-invisible-default)
   (setq iedit-initial-region (list beg end))
-  (iedit-start2 occurrence-regexp beg end)
+  (message "%d matches for \"%s\""
+           (iedit-start2 occurrence-regexp beg end)
+           (iedit-printable occurrence-regexp))
   (run-hooks 'iedit-mode-hook)
   (add-hook 'kbd-macro-termination-hook 'iedit-done nil t)
   (add-hook 'change-major-mode-hook 'iedit-done nil t)
@@ -413,14 +415,14 @@ Keymap used within overlays:
 (defun iedit-start2 (occurrence-regexp beg end)
   "Refresh Iedit mode."
   (setq iedit-occurrence-keymap iedit-mode-occurrence-keymap)
-  (setq iedit-mode
-        (propertize
-         (concat " Iedit:"
-                 (number-to-string
-                  (iedit-make-occurrences-overlays occurrence-regexp beg end)))
-         'face
-         'font-lock-warning-face))
-  (force-mode-line-update))
+  (let ((counter(iedit-make-occurrences-overlays occurrence-regexp beg end)))
+    (setq iedit-mode
+          (propertize
+           (concat " Iedit:" (number-to-string counter))
+           'face
+           'font-lock-warning-face))
+    (force-mode-line-update)
+    counter))
 
 (defun iedit-done ()
   "Exit Iedit mode.
@@ -608,9 +610,16 @@ the region back up one line."
   (when iedit-last-occurrence-local
     (remove-overlays nil nil iedit-occurrence-overlay-name t)
     (iedit-show-all)
-    (iedit-start2 (iedit-regexp-quote iedit-last-occurrence-local)
-                  (car iedit-initial-region)
-                  (cadr iedit-initial-region))))
+    (let* ((occurrence-regexp (iedit-regexp-quote iedit-last-occurrence-local))
+           (begin (car iedit-initial-region))
+           (end (cadr iedit-initial-region))
+           (counter (iedit-start2 occurrence-regexp begin end)))
+      (message "iedit %s. %d matches for \"%s\""
+               (if iedit-case-sensitive
+                   "is case sensitive"
+                 "ignores case")
+               counter
+               (iedit-printable occurrence-regexp)))))
 
 (provide 'iedit)
 

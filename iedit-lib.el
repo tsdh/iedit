@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-06-05 14:22:21 Victor Ren>
+;; Time-stamp: <2013-10-07 10:53:50 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -220,7 +220,6 @@ Return the number of occurrences."
               (push (iedit-make-occurrence-overlay beginning ending)
                     iedit-occurrences-overlays))
             (setq counter (1+ counter))))
-        (message "%d matches for \"%s\"" counter (iedit-printable occurrence-regexp))
         (when (/= 0 counter)
           (if iedit-unmatched-lines-invisible
               (iedit-hide-unmatched-lines iedit-occurrence-context-lines))))
