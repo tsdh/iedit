@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-02-09 00:55:45 Victor Ren>
+;; Time-stamp: <2013-10-21 16:15:25 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -53,7 +53,7 @@
 
 
 ;;; Default key bindings:
-(define-key global-map [C-return] 'iedit-rectangle-mode)
+(define-key ctl-x-r-map [return] 'iedit-rectangle-mode)
 
 (defvar iedit-rectangle nil
   "This buffer local variable which is the rectangle geometry if
