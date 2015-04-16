@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-10-07 10:53:50 Victor Ren>
+;; Time-stamp: <2015-04-13 12:16:14 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -154,6 +154,7 @@ is not applied to other occurrences when it is true.")
   (let ((map (make-sparse-keymap)))
     ;; Default key bindings
     (define-key map (kbd "TAB") 'iedit-next-occurrence)
+    (define-key map (kbd "<tab>") 'iedit-next-occurrence)
     (define-key map (kbd "<S-tab>") 'iedit-prev-occurrence)
     (define-key map (kbd "<S-iso-lefttab>") 'iedit-prev-occurrence)
     (define-key map (kbd "<backtab>") 'iedit-prev-occurrence)
