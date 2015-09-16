@@ -529,6 +529,8 @@ the initial string globally."
   "Restrict Iedit mode to current line."
   (interactive)
   (iedit-restrict-region (iedit-char-at-bol) (iedit-char-at-eol))
+  (setq iedit-num-lines-to-expand-up 0
+        iedit-num-lines-to-expand-down 0)
   (message "Restricted to current line, %d match%s."
            (length iedit-occurrences-overlays)
            (if (= 1 (length iedit-occurrences-overlays)) "" "es")))
