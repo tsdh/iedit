@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-10-07 11:26:05 Victor Ren>
+;; Time-stamp: <2016-05-13 11:10:36 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -219,10 +219,17 @@ This is like `describe-bindings', but displays only Iedit keys."
 
 ;;; Default key bindings:
 (when iedit-toggle-key-default
-  (define-key global-map iedit-toggle-key-default 'iedit-mode)
-  (define-key isearch-mode-map iedit-toggle-key-default 'iedit-mode-from-isearch)
-  (define-key esc-map iedit-toggle-key-default 'iedit-execute-last-modification)
-  (define-key help-map iedit-toggle-key-default 'iedit-mode-toggle-on-function))
+  (let ((key-def (lookup-key (current-global-map) iedit-toggle-key-default)))
+    (if key-def
+        (display-warning 'iedit (format "Iedit default key %S is occupied by %s."
+                                        (key-description iedit-toggle-key-default)
+                                        key-def)
+                         :warning)
+
+      (define-key global-map iedit-toggle-key-default 'iedit-mode)
+      (define-key isearch-mode-map iedit-toggle-key-default 'iedit-mode-from-isearch)
+      (define-key esc-map iedit-toggle-key-default 'iedit-execute-last-modification)
+      (define-key help-map iedit-toggle-key-default 'iedit-mode-toggle-on-function))))
 
 ;; Avoid to restore Iedit mode when restoring desktop
 (add-to-list 'desktop-minor-mode-handlers
