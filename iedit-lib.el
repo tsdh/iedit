@@ -589,19 +589,20 @@ This function preserves case."
   (iedit-barf-if-buffering)
   (let* ((ov (iedit-find-current-occurrence-overlay))
          (offset (- (point) (overlay-start ov)))
-         (from-string (downcase (buffer-substring-no-properties
-                                 (overlay-start ov)
-                                 (overlay-end ov))))
+         (from-string (buffer-substring-no-properties
+                       (overlay-start ov)
+                       (overlay-end ov)))
+         (from-string-lowercase (downcase from-string))
          (to-string (read-string "Replace with: "
                                  nil nil
                                  from-string
                                  nil)))
     (iedit-apply-on-occurrences
-     (lambda (beg end from-string to-string)
+     (lambda (beg end from-string-lowercase to-string)
        (goto-char beg)
-       (search-forward from-string end)
+       (search-forward from-string-lowercase end)
        (replace-match to-string nil))
-     from-string to-string)
+     from-string-lowercase to-string)
     (goto-char (+ (overlay-start ov) offset))))
 
 (defun iedit-blank-occurrences()
