@@ -245,6 +245,8 @@ This is like `describe-bindings', but displays only Iedit keys."
     (define-key map (kbd "M-I") 'iedit-restrict-current-line)
     (define-key map (kbd "M-{") 'iedit-expand-up-a-line)
     (define-key map (kbd "M-}") 'iedit-expand-down-a-line)
+    (define-key map (kbd "M-[") 'iedit-expand-up-to-occurence)
+    (define-key map (kbd "M-]") 'iedit-expand-down-to-occurence)
     (define-key map (kbd "M-G") 'iedit-apply-global-modification)
     (define-key map (kbd "M-C") 'iedit-toggle-case-sensitive)
     map)
@@ -591,6 +593,38 @@ the region back up one line."
   (interactive "P")
   (iedit-expand-by-a-line 'bottom
                           (if arg -1 1)))
+
+(defun iedit-down-occurence-pos ()
+  "Get position of next occurence past `iedit-last-occurrence'"
+  (save-excursion
+    (goto-char (1+ (iedit-last-occurrence)))
+    (search-forward-regexp (iedit-current-occurrence-string))))
+
+(defun iedit-expand-down-to-occurence ()
+  "Expand the search region downwards until reaching a new occurence.
+If no such occurence can be found, throw an error."
+  (interactive)
+  (let ((last-pos (iedit-last-occurrence))
+        (next-pos (iedit-down-occurence-pos)))
+    (iedit-expand-by-a-line 'bottom
+                            (- (line-number-at-pos next-pos)
+                               (line-number-at-pos last-pos)))))
+
+(defun iedit-up-occurrence-pos ()
+  "Get position of next occurence past `iedit-first-occurrence'"
+  (save-excursion
+    (goto-char (iedit-first-occurrence))
+    (search-backward-regexp (iedit-current-occurrence-string))))
+
+(defun iedit-expand-up-to-occurence ()
+  "Expand the search region upwards until reaching a new occurence.
+If no such occurence can be found, throw an error."
+  (interactive)
+  (let ((first-pos (iedit-first-occurrence))
+        (prev-pos (iedit-up-occurrence-pos)))
+    (iedit-expand-by-a-line 'top
+                            (- (line-number-at-pos first-pos)
+                               (line-number-at-pos prev-pos)))))
 
 (defun iedit-restrict-region (beg end &optional inclusive)
   "Restricting Iedit mode in a region."
