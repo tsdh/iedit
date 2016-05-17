@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-06-05 14:36:42 Victor Ren>
+;; Time-stamp: <2016-05-17 11:46:10 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.97
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -498,6 +498,30 @@ fob")))))
      (delete-char -1)
      (should (not (iedit-same-column)))
      (should-error (iedit-kill-rectangle)))))
+
+(ert-deftest iedit-expand-to-occurrence-test ()
+  (with-iedit-test-fixture
+   "a a
+a a a
+a a a"
+   (lambda()
+     (goto-char 5)
+     (iedit-restrict-current-line)
+     (call-interactively 'iedit-expand-down-to-occurrence)
+     (should (equal (length iedit-occurrences-overlays) 4))
+     (should (= (point) 11))
+     (call-interactively 'iedit-expand-up-to-occurrence)
+     (should (equal (length iedit-occurrences-overlays) 5))
+     (should (= (point) 3))
+     (call-interactively 'iedit-expand-up-to-occurrence)
+     (call-interactively 'iedit-expand-up-to-occurrence)
+     (should (equal (length iedit-occurrences-overlays) 6))
+     (should (= (point) 1))
+     (call-interactively 'iedit-expand-down-to-occurrence)
+     (call-interactively 'iedit-expand-down-to-occurrence)
+     (call-interactively 'iedit-expand-down-to-occurrence)
+     (should (equal (length iedit-occurrences-overlays) 8))
+     (should (= (point) 15)))))
 
 (ert-deftest iedit-kill-rectangle-test ()
   (with-iedit-test-fixture
