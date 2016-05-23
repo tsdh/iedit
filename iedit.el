@@ -220,7 +220,7 @@ This is like `describe-bindings', but displays only Iedit keys."
 ;;; Default key bindings:
 (when iedit-toggle-key-default
   (let ((key-def (lookup-key (current-global-map) iedit-toggle-key-default)))
-    (if key-def
+    (if (and key-def (not (eq key-def 'iedit-mode)))
         (display-warning 'iedit (format "Iedit default key %S is occupied by %s."
                                         (key-description iedit-toggle-key-default)
                                         key-def)
