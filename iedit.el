@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-05-17 12:25:04 Victor Ren>
+;; Time-stamp: <2016-05-25 03:06:11 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -245,8 +245,8 @@ This is like `describe-bindings', but displays only Iedit keys."
     (define-key map (kbd "M-I") 'iedit-restrict-current-line)
     (define-key map (kbd "M-{") 'iedit-expand-up-a-line)
     (define-key map (kbd "M-}") 'iedit-expand-down-a-line)
-    (define-key map (kbd "M-[") 'iedit-expand-up-to-occurrence)
-    (define-key map (kbd "M-]") 'iedit-expand-down-to-occurrence)
+    (define-key map (kbd "M-n") 'iedit-expand-up-to-occurrence)
+    (define-key map (kbd "M-p") 'iedit-expand-down-to-occurrence)
     (define-key map (kbd "M-G") 'iedit-apply-global-modification)
     (define-key map (kbd "M-C") 'iedit-toggle-case-sensitive)
     map)
