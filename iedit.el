@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-05-25 03:06:11 Victor Ren>
+;; Time-stamp: <2016-05-29 14:57:51 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -33,7 +33,7 @@
 ;;
 ;; Normal scenario of iedit-mode is like:
 ;;
-;; - Highlight certain contents - by press C-; (The default binding)
+;; - Highlight certain contents - by press C-; (The default key binding)
 ;;   All occurrences of a symbol, string in the buffer or a region may be
 ;;   highlighted corresponding to current mark, point and prefix argument.
 ;;   Refer to the document of `iedit-mode' for details.
@@ -220,7 +220,7 @@ This is like `describe-bindings', but displays only Iedit keys."
 ;;; Default key bindings:
 (when iedit-toggle-key-default
   (let ((key-def (lookup-key (current-global-map) iedit-toggle-key-default)))
-    (if (and key-def (not (eq key-def 'iedit-mode)))
+    (if key-def
         (display-warning 'iedit (format "Iedit default key %S is occupied by %s."
                                         (key-description iedit-toggle-key-default)
                                         key-def)
@@ -245,8 +245,8 @@ This is like `describe-bindings', but displays only Iedit keys."
     (define-key map (kbd "M-I") 'iedit-restrict-current-line)
     (define-key map (kbd "M-{") 'iedit-expand-up-a-line)
     (define-key map (kbd "M-}") 'iedit-expand-down-a-line)
-    (define-key map (kbd "M-n") 'iedit-expand-up-to-occurrence)
-    (define-key map (kbd "M-p") 'iedit-expand-down-to-occurrence)
+    (define-key map (kbd "M-p") 'iedit-expand-up-to-occurrence)
+    (define-key map (kbd "M-n") 'iedit-expand-down-to-occurrence)
     (define-key map (kbd "M-G") 'iedit-apply-global-modification)
     (define-key map (kbd "M-C") 'iedit-toggle-case-sensitive)
     map)
@@ -553,23 +553,16 @@ lines. The region being acted upon is controlled with
 bottom). With a prefix, collapses the top or bottom of the search
 region by `amount' lines."
   (interactive "P")
-  ;; Since iedit-done resets iedit-num-lines-to-expand-{down,up}, we
-  ;; have to hang on to them in tmp variables
-  (let ((tmp-up iedit-num-lines-to-expand-up)
-        (tmp-down iedit-num-lines-to-expand-down)
-        ;; we want to call iedit-mode with a universal prefix arg
-        (current-prefix-arg '(4)))
-    (iedit-done)
-    (call-interactively 'iedit-mode)
-    (setq iedit-num-lines-to-expand-up tmp-up)
-    (setq iedit-num-lines-to-expand-down tmp-down)
+  (let ((occurrence (iedit-current-occurrence-string)))
+    (iedit-cleanup)
     (if (eq where 'top)
-        (setq iedit-num-lines-to-expand-up (max 0
-                                                (+ amount iedit-num-lines-to-expand-up)))
-      (setq iedit-num-lines-to-expand-down (max 0
-                                                (+ amount iedit-num-lines-to-expand-down))))
-    (iedit-restrict-region (iedit-char-at-bol (- iedit-num-lines-to-expand-up))
-                           (iedit-char-at-eol iedit-num-lines-to-expand-down))
+        (setq iedit-num-lines-to-expand-up
+              (max 0 (+ amount iedit-num-lines-to-expand-up)))
+      (setq iedit-num-lines-to-expand-down
+            (max 0 (+ amount iedit-num-lines-to-expand-down))))
+    (iedit-start (iedit-regexp-quote occurrence)
+                 (iedit-char-at-bol (- iedit-num-lines-to-expand-up))
+                 (iedit-char-at-eol iedit-num-lines-to-expand-down))
     (message "Now looking -%d/+%d lines around current line, %d match%s."
              iedit-num-lines-to-expand-up
              iedit-num-lines-to-expand-down

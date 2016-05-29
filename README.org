@@ -8,7 +8,7 @@ feedback as you type.
 
 Normal scenario of Iedit mode is like:
 
- - Highlight certain contents - by press C-;
+ - Highlight certain contents - by press C-; (The default key binding)
    All occurrences of a symbol, string or a rectangle in the buffer or a region
    may be highlighted corresponding to current mark, point and prefix
    argument. Refer to the document of `iedit-mode' for details.
@@ -40,7 +40,7 @@ Renaming refactoring is convinient in Iedit mode
 
  - Restricting the search area to the lines near the current line can
    be done by pressing M-{ and M-}. These will expand the search
-   region one line at a time from the top and bottom. Add a prefix
+   region one line at a time from the top and bottom.  Add a prefix
    argument to go the opposite direction.
 
 Iedit-rectangle-mode provides rectangle support with *visible rectangle*
