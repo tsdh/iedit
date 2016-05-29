@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-05-29 14:57:51 Victor Ren>
+;; Time-stamp: <2016-05-29 23:52:05 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -572,7 +572,7 @@ region by `amount' lines."
 (defun iedit-expand-up-a-line (&optional arg)
   "After restricting iedit to the current line with
 `iedit-restrict-current-line', this function expands the search
-region upwards by one line. With a prefix, bring the top of the
+region upwards by one line.  With a prefix, bring the top of the
 region back down one line."
   (interactive "P")
   (iedit-expand-by-a-line 'top
@@ -581,23 +581,35 @@ region back down one line."
 (defun iedit-expand-down-a-line (&optional arg)
   "After restricting iedit to the current line with
 `iedit-restrict-current-line', this function expands the search
-region downwards by one line. With a prefix, bring the bottom of
+region downwards by one line.  With a prefix, bring the bottom of
 the region back up one line."
   (interactive "P")
   (iedit-expand-by-a-line 'bottom
                           (if arg -1 1)))
 
-(defun iedit-expand-down-to-occurrence ()
+(defun iedit-expand-down-to-occurrence (&optional arg)
   "Expand the search region downwards until reaching a new occurrence.
-If no such occurrence can be found, throw an error."
-  (interactive)
-  (iedit-expand-to-occurrence t))
+If no such occurrence can be found, throw an error.  With a
+prefix, bring the bottom of the region back up one occurrence."
+  (interactive "P")
+  (if arg
+      (progn (iedit-restrict-region
+              (iedit-first-occurrence)
+              (1- (iedit-last-occurrence)))
+             (goto-char (iedit-last-occurrence)))
+  (iedit-expand-to-occurrence t)))
 
-(defun iedit-expand-up-to-occurrence ()
+(defun iedit-expand-up-to-occurrence (&optional arg)
   "Expand the search region upwards until reaching a new occurrence.
-If no such occurrence can be found, throw an error."
-  (interactive)
-  (iedit-expand-to-occurrence nil))
+If no such occurrence can be found, throw an error.  With a
+prefix, bring the top of the region back down one occurrence."
+  (interactive "P")
+  (if arg
+      (progn (iedit-restrict-region
+              (1+ (iedit-first-occurrence))
+              (+ (iedit-occurrence-string-length) (iedit-last-occurrence)))
+             (goto-char (iedit-first-occurrence)))
+    (iedit-expand-to-occurrence nil)))
 
 (defun iedit-expand-to-occurrence (forward)
   "Expand to next or previous occurrence."
