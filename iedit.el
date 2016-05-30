@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-05-29 23:52:05 Victor Ren>
+;; Time-stamp: <2016-05-30 09:51:08 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -220,7 +220,7 @@ This is like `describe-bindings', but displays only Iedit keys."
 ;;; Default key bindings:
 (when iedit-toggle-key-default
   (let ((key-def (lookup-key (current-global-map) iedit-toggle-key-default)))
-    (if key-def
+    (if (and key-def (not (eq key-def 'iedit-mode)))
         (display-warning 'iedit (format "Iedit default key %S is occupied by %s."
                                         (key-description iedit-toggle-key-default)
                                         key-def)
@@ -460,12 +460,7 @@ the initial string globally."
 (defun iedit-mode-on-action (&optional arg)
   "Turn off Iedit mode or restrict it in a region if region is active."
   (if (iedit-region-active)
-      ;; Restrict iedit-mode
-      (let ((beg (region-beginning))
-            (end (region-end)))
-        (if (null (iedit-find-overlay beg end 'iedit-occurrence-overlay-name arg))
-            (iedit-done)
-          (iedit-restrict-region beg end arg)))
+      (iedit-restrict-region (region-beginning) (region-end) arg)
     (iedit-done)))
 
 
@@ -629,20 +624,23 @@ prefix, bring the top of the region back down one occurrence."
 
 (defun iedit-restrict-region (beg end &optional inclusive)
   "Restricting Iedit mode in a region."
-  (when iedit-buffering
-    (iedit-stop-buffering))
-  (setq iedit-last-occurrence-local (iedit-current-occurrence-string))
-  (setq mark-active nil)
-  (run-hooks 'deactivate-mark-hook)
-  (iedit-show-all)
-  (iedit-cleanup-occurrences-overlays beg end inclusive)
-  (if iedit-unmatched-lines-invisible
-      (iedit-hide-unmatched-lines iedit-occurrence-context-lines))
-  (setq iedit-mode (propertize
-                    (concat " Iedit:" (number-to-string
-                                       (length iedit-occurrences-overlays)))
-                    'face 'font-lock-warning-face))
-  (force-mode-line-update))
+  (if (null (iedit-find-overlay beg end 'iedit-occurrence-overlay-name inclusive))
+      (iedit-done)
+    (when iedit-buffering
+      (iedit-stop-buffering))
+    (setq iedit-last-occurrence-local (iedit-current-occurrence-string))
+    (setq mark-active nil)
+    (run-hooks 'deactivate-mark-hook)
+    (iedit-show-all)
+    (iedit-cleanup-occurrences-overlays beg end inclusive)
+    (if iedit-unmatched-lines-invisible
+        (iedit-hide-unmatched-lines iedit-occurrence-context-lines))
+    (setq iedit-mode (propertize
+                      (concat " Iedit:" (number-to-string
+                                         (length iedit-occurrences-overlays)))
+                      'face 'font-lock-warning-face))
+    (force-mode-line-update)))
+
 
 (defun iedit-toggle-case-sensitive ()
   "Toggle case-sensitive matching occurrences. "
