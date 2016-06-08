@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-05-24 10:36:51 Victor Ren>
+;; Time-stamp: <2016-06-08 10:44:42 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -888,7 +888,8 @@ it just means mark is active."
   (and (if iedit-transient-mark-sensitive
            transient-mark-mode
          t)
-       mark-active (not (equal (mark) (point)))))
+       mark-active
+       (not (equal (mark) (point)))))
 
 (defun iedit-barf-if-lib-active()
   "Signal error if Iedit lib is active."

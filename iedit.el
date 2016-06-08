@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-05-30 09:51:08 Victor Ren>
+;; Time-stamp: <2016-06-08 10:58:11 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -310,6 +310,11 @@ Iedit mode is turned off last time (might be in other buffer) is
 used as occurrence.  If region active, Iedit mode is limited
 within the current region.
 
+With digital prefix argument 1, Iedit mode is limited on the
+current symbol or the active region, which means just one
+instance is highlighted.  This behavior serves as a start point
+of incremental selection work flow.
+
 If Iedit mode is on and region is active, Iedit mode is
 restricted in the region, e.g. the occurrences outside of the
 region is excluded.
@@ -336,6 +341,7 @@ Keymap used within overlays:
                    (next-single-char-property-change 1 'read-only)
                  (point-min)))
           (end (point-max)))
+      ;; Get the occurrence
       (cond ((and arg
                   (= 4 (prefix-numeric-value arg))
                   iedit-last-occurrence-local)
@@ -354,15 +360,21 @@ Keymap used within overlays:
              (when iedit-only-at-symbol-boundaries
                (setq complete-symbol t)))
             (t (error "No candidate of the occurrence, cannot enable Iedit mode")))
+      ;; Get the scope
       (when arg
-        (if (= 0 (prefix-numeric-value arg))
-            (save-excursion
-              (mark-defun)
-              (setq beg (region-beginning))
-              (setq end (region-end)))
-          (when (iedit-region-active)
-            (setq beg (region-beginning))
-            (setq end (region-end)))))
+        (cond ((= 0 (prefix-numeric-value arg))
+               (save-excursion
+                 (mark-defun)
+                 (setq beg (region-beginning))
+                 (setq end (region-end))))
+              ((and (= 1 (prefix-numeric-value arg))
+                    (not (iedit-region-active)))
+               (let ((region (bounds-of-thing-at-point 'symbol)))
+                 (setq beg (car region))
+                 (setq end (cdr region))))
+              ((iedit-region-active)
+                (setq beg (region-beginning))
+                (setq end (region-end)))))
       (setq iedit-only-complete-symbol-local complete-symbol)
       (setq mark-active nil)
       (run-hooks 'deactivate-mark-hook)
@@ -591,7 +603,8 @@ prefix, bring the bottom of the region back up one occurrence."
       (progn (iedit-restrict-region
               (iedit-first-occurrence)
               (1- (iedit-last-occurrence)))
-             (goto-char (iedit-last-occurrence)))
+             (when iedit-mode
+               (goto-char (iedit-last-occurrence))))
   (iedit-expand-to-occurrence t)))
 
 (defun iedit-expand-up-to-occurrence (&optional arg)
@@ -603,7 +616,8 @@ prefix, bring the top of the region back down one occurrence."
       (progn (iedit-restrict-region
               (1+ (iedit-first-occurrence))
               (+ (iedit-occurrence-string-length) (iedit-last-occurrence)))
-             (goto-char (iedit-first-occurrence)))
+             (when iedit-mode
+               (goto-char (iedit-first-occurrence))))
     (iedit-expand-to-occurrence nil)))
 
 (defun iedit-expand-to-occurrence (forward)
