@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-08 10:58:11 Victor Ren>
+;; Time-stamp: <2016-06-08 23:23:09 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -614,7 +614,7 @@ prefix, bring the top of the region back down one occurrence."
   (interactive "P")
   (if arg
       (progn (iedit-restrict-region
-              (1+ (iedit-first-occurrence))
+              (+ (iedit-occurrence-string-length) (iedit-first-occurrence))
               (+ (iedit-occurrence-string-length) (iedit-last-occurrence)))
              (when iedit-mode
                (goto-char (iedit-first-occurrence))))
