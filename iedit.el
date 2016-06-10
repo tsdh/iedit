@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-08 23:23:09 Victor Ren>
+;; Time-stamp: <2016-06-10 20:44:12 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -82,7 +82,8 @@
 (require 'iedit-lib)
 
 (defcustom iedit-current-symbol-default t
-  "If no-nil, use current symbol by default for the occurrence."
+  "If no-nil, use current symbol by default for the occurrence.
+Otherwise you have to activate a region to start iedit mode."
   :type 'boolean
   :group 'iedit)
 
@@ -95,7 +96,8 @@ For example, when invoking command `iedit-mode' on the \"in\" in the
   :group 'iedit)
 
 (defcustom iedit-toggle-key-default (kbd "C-;")
-  "If no-nil, the key is inserted into global-map, isearch-mode-map, esc-map and help-map."
+  "If no-nil, the key is inserted into global-map,
+isearch-mode-map, esc-map and help-map."
   :type 'vector
   :group 'iedit)
 
@@ -143,7 +145,19 @@ point should be included in the replacement region.")
 (defvar iedit-current-symbol '(lambda () (current-word t))
   "This is a function which returns a string as occurrence candidate.
 This local buffer varialbe can be configured in some modes.
-An example of how to use this variable: todo")
+An example of how to use this variable:
+(add-hook 'perl-mode-hook
+          '(lambda ()
+             (setq iedit-only-at-symbol-boundaries nil)
+             (setq iedit-current-symbol
+                   '(lambda ()
+                      (let* ((bound (bounds-of-thing-at-point 'symbol))
+                             (prefix-char (char-after (1- (car bound)))))
+                        (if (memq prefix-char '(?$ ?% ?@ ?*))
+                            (buffer-substring-no-properties (1- (car bound)) (cdr bound))
+                          (buffer-substring-no-properties (car bound) (cdr bound))))))))
+
+")
 
 (make-variable-buffer-local 'iedit-mode)
 (make-variable-buffer-local 'iedit-only-complete-symbol-local)
@@ -436,7 +450,7 @@ Keymap used within overlays:
 (defun iedit-start2 (occurrence-regexp beg end)
   "Refresh Iedit mode."
   (setq iedit-occurrence-keymap iedit-mode-occurrence-keymap)
-  (let ((counter(iedit-make-occurrences-overlays occurrence-regexp beg end)))
+  (let ((counter (iedit-make-occurrences-overlays occurrence-regexp beg end)))
     (setq iedit-mode
           (propertize
            (concat " Iedit:" (number-to-string counter))
