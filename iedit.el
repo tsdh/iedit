@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-10 20:44:12 Victor Ren>
+;; Time-stamp: <2016-06-10 22:29:42 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -156,8 +156,7 @@ An example of how to use this variable:
                         (if (memq prefix-char '(?$ ?% ?@ ?*))
                             (buffer-substring-no-properties (1- (car bound)) (cdr bound))
                           (buffer-substring-no-properties (car bound) (cdr bound))))))))
-
-")
+'$%@*' will be included in the occurrences in perl mode")
 
 (make-variable-buffer-local 'iedit-mode)
 (make-variable-buffer-local 'iedit-only-complete-symbol-local)
@@ -393,7 +392,10 @@ Keymap used within overlays:
       (setq mark-active nil)
       (run-hooks 'deactivate-mark-hook)
       (setq iedit-initial-string-local occurrence)
-      (iedit-start (iedit-regexp-quote occurrence) beg end))))
+      (iedit-start (iedit-regexp-quote occurrence) beg end)
+      (unless iedit-occurrences-overlays
+        ;; (message "No matches found for %s" (iedit-regexp-quote occurrence))
+        (iedit-done)))))
 
 (defun iedit-mode-from-isearch (regexp)
   "Start Iedit mode using last search string as the regexp."
@@ -419,7 +421,7 @@ Keymap used within overlays:
     (iedit-start regexp (point-min) (point-max))
     ;; TODO: reconsider how to avoid the loop in iedit-same-length
     (cond ((not iedit-occurrences-overlays)
-           (message "No matches found")
+           (message "No matches found for %s" regexp)
            (iedit-done))
           ((not (iedit-same-length))
            (message "Matches are not the same length.")
