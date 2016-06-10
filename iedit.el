@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-11 00:39:47 Victor Ren>
+;; Time-stamp: <2016-06-11 00:51:10 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -353,7 +353,7 @@ Keymap used within overlays:
              (setq occurrence  (buffer-substring-no-properties
                                 (mark) (point)))
              (setq iedit-only-complete-symbol-local nil))
-            (t (setq iedit-only-complete-symbol-local t)
+            (t (setq iedit-only-complete-symbol-local t); might be changed by iedit-current-symbol
                (setq occurrence (funcall iedit-current-symbol))
                (unless occurrence
                  (error "No candidate of the occurrence, cannot enable Iedit mode"))))
