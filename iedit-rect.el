@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-10-21 16:15:25 Victor Ren>
+;; Time-stamp: <2016-06-11 12:48:13 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.97
@@ -66,7 +66,7 @@ current mode is iedit-rect. Otherwise it is nil.
 ;;; Define Iedit rect mode map
 (defvar iedit-rect-keymap
   (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map iedit-occurrence-keymap-default)
+    (set-keymap-parent map iedit-occurrence-keymap)
     (define-key map (kbd "M-K") 'iedit-kill-rectangle)
     map)
   "Keymap used within overlays in Iedit-rect mode.")

@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-10 22:29:42 Victor Ren>
+;; Time-stamp: <2016-06-11 12:23:07 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -429,7 +429,6 @@ Keymap used within overlays:
 
 (defun iedit-start (occurrence-regexp beg end)
   "Start Iedit mode for the `occurrence-regexp' in the current buffer."
-
   ;; enforce skip modification once, errors may happen to cause this to be
   ;; unset.
   (setq iedit-skip-modification-once t)
