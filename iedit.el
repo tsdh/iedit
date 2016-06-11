@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-11 12:23:07 Victor Ren>
+;; Time-stamp: <2016-06-11 13:10:35 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -81,20 +81,6 @@
 (eval-when-compile (require 'cl))
 (require 'iedit-lib)
 
-(defcustom iedit-current-symbol-default t
-  "If no-nil, use current symbol by default for the occurrence.
-Otherwise you have to activate a region to start iedit mode."
-  :type 'boolean
-  :group 'iedit)
-
-(defcustom iedit-only-at-symbol-boundaries t
-  "If no-nil, matches have to start and end at symbol boundaries.
-For example, when invoking command `iedit-mode' on the \"in\" in the
-  sentence \"The king in the castle...\", the \"king\" is not
-  edited."
-  :type 'boolean
-  :group 'iedit)
-
 (defcustom iedit-toggle-key-default (kbd "C-;")
   "If no-nil, the key is inserted into global-map,
 isearch-mode-map, esc-map and help-map."
@@ -109,11 +95,11 @@ isearch-mode-map, esc-map and help-map."
 
 (defvar iedit-mode nil) ;; Name of the minor mode
 
-(defvar iedit-only-complete-symbol-local nil
+(defvar iedit-only-complete-symbol-local t
   "This is buffer local variable which indicates the occurrence
 only matches complete symbol.")
 
-(defvar iedit-only-complete-symbol-global nil
+(defvar iedit-only-complete-symbol-global t
   "This is global variable which indicates the last global occurrence
 only matches complete symbol.")
 
@@ -148,9 +134,9 @@ This local buffer varialbe can be configured in some modes.
 An example of how to use this variable:
 (add-hook 'perl-mode-hook
           '(lambda ()
-             (setq iedit-only-at-symbol-boundaries nil)
              (setq iedit-current-symbol
                    '(lambda ()
+                      (setq iedit-only-complete-symbol-local nil)
                       (let* ((bound (bounds-of-thing-at-point 'symbol))
                              (prefix-char (char-after (1- (car bound)))))
                         (if (memq prefix-char '(?$ ?% ?@ ?*))
@@ -349,30 +335,28 @@ Keymap used within overlays:
         (setq iedit-only-complete-symbol-global iedit-only-complete-symbol-local))
     (iedit-barf-if-lib-active)
     (let (occurrence
-          complete-symbol
           (beg (if (eq major-mode 'occur-edit-mode) ; skip the first occurrence
                    (next-single-char-property-change 1 'read-only)
                  (point-min)))
           (end (point-max)))
-      ;; Get the occurrence
+      ;; Get the occurrence and iedit-only-complete-symbol-local
       (cond ((and arg
                   (= 4 (prefix-numeric-value arg))
                   iedit-last-occurrence-local)
-             (setq occurrence iedit-last-occurrence-local)
-             (setq complete-symbol iedit-only-complete-symbol-local))
+             (setq occurrence iedit-last-occurrence-local))
             ((and arg
                   (= 16 (prefix-numeric-value arg))
                   iedit-last-initial-string-global)
              (setq occurrence iedit-last-initial-string-global)
-             (setq complete-symbol iedit-only-complete-symbol-global))
+             (setq iedit-only-complete-symbol-local iedit-only-complete-symbol-global))
             ((iedit-region-active)
              (setq occurrence  (buffer-substring-no-properties
-                                (mark) (point))))
-            ((and iedit-current-symbol-default
-                  (setq occurrence (funcall iedit-current-symbol)))
-             (when iedit-only-at-symbol-boundaries
-               (setq complete-symbol t)))
-            (t (error "No candidate of the occurrence, cannot enable Iedit mode")))
+                                (mark) (point)))
+             (setq iedit-only-complete-symbol-local nil))
+            (t (setq iedit-only-complete-symbol-local t); might be changed by iedit-current-symbol
+               (setq occurrence (funcall iedit-current-symbol))
+               (unless occurrence
+                 (error "No candidate of the occurrence, cannot enable Iedit mode"))))
       ;; Get the scope
       (when arg
         (cond ((= 0 (prefix-numeric-value arg))
@@ -388,7 +372,6 @@ Keymap used within overlays:
               ((iedit-region-active)
                 (setq beg (region-beginning))
                 (setq end (region-end)))))
-      (setq iedit-only-complete-symbol-local complete-symbol)
       (setq mark-active nil)
       (run-hooks 'deactivate-mark-hook)
       (setq iedit-initial-string-local occurrence)
