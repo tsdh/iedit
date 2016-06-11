@@ -3,10 +3,10 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-11 12:57:46 Victor Ren>
+;; Time-stamp: <2016-06-11 22:20:56 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
-;; Version: 0.97
+;; Version: 0.9.9
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
 ;; Compatibility: GNU Emacs: 22.x, 23.x, 24.x
 
@@ -580,9 +580,7 @@ value of `iedit-occurrence-context-lines' is used for this time."
   (iedit-barf-if-buffering)
   (iedit-apply-on-occurrences 'upcase-region))
 
-(when (featurep 'multiple-cursors-core)
-  (require 'multiple-cursors-core)
-
+(when (require 'multiple-cursors-core)
   (defun iedit-switch-to-mc-mode ()
     "Switch to multiple-cursors-mode."
     (interactive "*")
