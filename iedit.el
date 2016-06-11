@@ -2,10 +2,10 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-11 13:10:35 Victor Ren>
+;; Time-stamp: <2016-06-11 13:29:49 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
-;; Version: 0.97
+;; Version: 0.9.9
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
 ;; Compatibility: GNU Emacs: 22.x, 23.x, 24.x
 
