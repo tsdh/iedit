@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-11 13:29:49 Victor Ren>
+;; Time-stamp: <2016-06-12 13:58:26 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.9.9
@@ -128,28 +128,30 @@ point should be included in the replacement region.")
   "This is a global variable indicating how many lines down from
 point should be included in the replacement region.")
 
-(defvar iedit-current-symbol '(lambda () (current-word t))
+(defvar iedit-default-occurrence '(lambda () (current-word t))
   "This is a function which returns a string as occurrence candidate.
-This local buffer varialbe can be configured in some modes.
-An example of how to use this variable:
+The default is the current symbol under the point.  This local
+buffer varialbe can be configured in some modes.  An example of
+how to use this variable:
 (add-hook 'perl-mode-hook
           '(lambda ()
-             (setq iedit-current-symbol
+             (setq iedit-default-occurrence
                    '(lambda ()
-                      (setq iedit-only-complete-symbol-local nil)
                       (let* ((bound (bounds-of-thing-at-point 'symbol))
                              (prefix-char (char-after (1- (car bound)))))
                         (if (memq prefix-char '(?$ ?% ?@ ?*))
-                            (buffer-substring-no-properties (1- (car bound)) (cdr bound))
+                            (progn
+                              (setq iedit-only-complete-symbol-local nil)
+                              (buffer-substring-no-properties (1- (car bound)) (cdr bound)))
                           (buffer-substring-no-properties (car bound) (cdr bound))))))))
-'$%@*' will be included in the occurrences in perl mode")
+'$%@*' will be included in the occurrences in perl mode.")
 
 (make-variable-buffer-local 'iedit-mode)
 (make-variable-buffer-local 'iedit-only-complete-symbol-local)
 (make-variable-buffer-local 'iedit-last-occurrence-local)
 (make-variable-buffer-local 'iedit-initial-string-local)
 (make-variable-buffer-local 'iedit-initial-region)
-(make-variable-buffer-local 'iedit-current-symbol)
+(make-variable-buffer-local 'iedit-default-occurrence)
 
 (or (assq 'iedit-mode minor-mode-alist)
     (nconc minor-mode-alist
@@ -284,7 +286,7 @@ highlighted.  If one occurrence is modified, the change are
 propagated to all other occurrences simultaneously.
 
 If region is not active, the current symbol (returns from
-`iedit-current-symbol') is used as the occurrence by default.
+`iedit-default-occurrence') is used as the occurrence by default.
 The occurrences of the current symbol, but not include
 occurrences that are part of other symbols, are highlighted.  If
 you still want to match all the occurrences, even though they are
@@ -353,8 +355,8 @@ Keymap used within overlays:
              (setq occurrence  (buffer-substring-no-properties
                                 (mark) (point)))
              (setq iedit-only-complete-symbol-local nil))
-            (t (setq iedit-only-complete-symbol-local t); might be changed by iedit-current-symbol
-               (setq occurrence (funcall iedit-current-symbol))
+            (t (setq iedit-only-complete-symbol-local t); might be changed by iedit-default-occurrence
+               (setq occurrence (funcall iedit-default-occurrence))
                (unless occurrence
                  (error "No candidate of the occurrence, cannot enable Iedit mode"))))
       ;; Get the scope
