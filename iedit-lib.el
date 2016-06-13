@@ -582,7 +582,9 @@ value of `iedit-occurrence-context-lines' is used for this time."
 
 (when (require 'multiple-cursors-core nil t)
   (defun iedit-switch-to-mc-mode ()
-    "Switch to multiple-cursors-mode."
+    "Switch to multiple-cursors-mode.  So that you can navigate
+out of the occurrence and edit simutaneously with multiple
+cursors."
     (interactive "*")
     (iedit-barf-if-buffering)
     (let* ((ov (iedit-find-current-occurrence-overlay))
