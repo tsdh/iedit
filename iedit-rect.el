@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-11 22:03:41 Victor Ren>
+;; Time-stamp: <2016-06-14 00:05:58 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.9.9
@@ -53,7 +53,15 @@
 
 
 ;;; Default key bindings:
-(define-key ctl-x-r-map [return] 'iedit-rectangle-mode)
+(when (null (where-is-internal 'iedit-rectangle-mode))
+  (let ((key-def (lookup-key ctl-x-r-map [return])))
+    (if key-def
+        (display-warning 'iedit (format "Iedit rect default key %S is occupied by %s."
+                                        (key-description [C-x r return])
+                                        key-def)
+                         :warning)
+      (define-key ctl-x-r-map [return] 'iedit-rectangle-mode)
+      (message "Iedit-rect default key binding is %s" (key-description [C-x r return])))))
 
 (defvar iedit-rectangle nil
   "This buffer local variable which is the rectangle geometry if
