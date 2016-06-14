@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-11 23:31:41 Victor Ren>
+;; Time-stamp: <2016-06-14 10:16:52 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.9.9
@@ -175,6 +175,8 @@ is not applied to other occurrences when it is true.")
     (define-key map (kbd "M-<") 'iedit-goto-first-occurrence)
     (define-key map (kbd "M->") 'iedit-goto-last-occurrence)
     (define-key map (kbd "C-?") 'iedit-help-for-occurrences)
+    (define-key map [remap keyboard-escape-quit] 'iedit-quit)
+    (define-key map [remap keyboard-quit] 'iedit-quit)
     map)
   "Default keymap used within occurrence overlays.")
 
@@ -196,6 +198,11 @@ It should be set before occurrence overlay is created.")
                    (substitute-command-keys "\\[iedit-goto-first-occurrence]") "/"
                    (substitute-command-keys "\\[iedit-goto-last-occurrence]") ":first/last "
                    )))
+
+(defun iedit-quit ()
+  "Quit the current mode."
+  (interactive)
+  (run-hooks 'iedit-aborting-hook))
 
 (defun iedit-make-occurrences-overlays (occurrence-regexp beg end)
   "Create occurrence overlays for `occurrence-regexp' in a region.
