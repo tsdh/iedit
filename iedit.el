@@ -2,11 +2,12 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-12 13:58:26 Victor Ren>
+;; Time-stamp: <2016-06-17 11:28:45 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.9.9
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
+;;        https://github.com/victorhge/iedit
 ;; Compatibility: GNU Emacs: 22.x, 23.x, 24.x
 
 ;; This file is not part of GNU Emacs, but it is distributed under
@@ -66,6 +67,7 @@
 
 ;;; todo:
 ;; - Add more easy access keys for whole occurrence
+;; - pair in html
 
 ;;; Contributors
 ;; Adam Lindberg <eproxus@gmail.com> added a case sensitivity option that can be toggled.
@@ -95,13 +97,17 @@ isearch-mode-map, esc-map and help-map."
 
 (defvar iedit-mode nil) ;; Name of the minor mode
 
-(defvar iedit-only-complete-symbol-local t
-  "This is buffer local variable which indicates the occurrence
-only matches complete symbol.")
+(defvar iedit-use-symbol-boundaries t
+  "If no-nil, matches have to start and end at symbol boundaries. Otherwise,
+matches starts and end at word bondaries.")
 
-(defvar iedit-only-complete-symbol-global t
+(defvar iedit-occurrence-type-local 'symbol
+  "This is buffer local variable which indicates the occurrence
+type. It might be (symbol word other).")
+
+(defvar iedit-occurrence-type-global 'symbol
   "This is global variable which indicates the last global occurrence
-only matches complete symbol.")
+type. It might be (symbol word other).")
 
 (defvar iedit-last-occurrence-local nil
   "This is buffer local variable which is the occurrence when
@@ -128,30 +134,31 @@ point should be included in the replacement region.")
   "This is a global variable indicating how many lines down from
 point should be included in the replacement region.")
 
-(defvar iedit-default-occurrence '(lambda () (current-word t))
-  "This is a function which returns a string as occurrence candidate.
-The default is the current symbol under the point.  This local
-buffer varialbe can be configured in some modes.  An example of
-how to use this variable:
+(defvar iedit-default-occurrence-mode-local nil
+  "This is a mode special function get a string as occurrence candidate.
+It is called in `iedit-default-occurrence'.  This local buffer
+varialbe can be configured in some modes.  An example of how to
+use this variable:
 (add-hook 'perl-mode-hook
           '(lambda ()
-             (setq iedit-default-occurrence
+             (setq iedit-default-occurrence-mode-local
                    '(lambda ()
                       (let* ((bound (bounds-of-thing-at-point 'symbol))
                              (prefix-char (char-after (1- (car bound)))))
                         (if (memq prefix-char '(?$ ?% ?@ ?*))
                             (progn
-                              (setq iedit-only-complete-symbol-local nil)
+                              (setq iedit-occurrence-type-local 'other)
                               (buffer-substring-no-properties (1- (car bound)) (cdr bound)))
                           (buffer-substring-no-properties (car bound) (cdr bound))))))))
 '$%@*' will be included in the occurrences in perl mode.")
 
 (make-variable-buffer-local 'iedit-mode)
-(make-variable-buffer-local 'iedit-only-complete-symbol-local)
+(make-variable-buffer-local 'iedit-use-symbol-boundaries)
+(make-variable-buffer-local 'iedit-occurrence-type-local)
 (make-variable-buffer-local 'iedit-last-occurrence-local)
 (make-variable-buffer-local 'iedit-initial-string-local)
 (make-variable-buffer-local 'iedit-initial-region)
-(make-variable-buffer-local 'iedit-default-occurrence)
+(make-variable-buffer-local 'iedit-default-occurrence-mode-local)
 
 (or (assq 'iedit-mode minor-mode-alist)
     (nconc minor-mode-alist
@@ -332,16 +339,14 @@ Keymap used within overlays:
 \\{iedit-mode-occurrence-keymap}"
   (interactive "P")
   (if iedit-mode
-      (progn
-        (iedit-mode-on-action arg)
-        (setq iedit-only-complete-symbol-global iedit-only-complete-symbol-local))
+      (iedit-mode-on-action arg)
     (iedit-barf-if-lib-active)
     (let (occurrence
           (beg (if (eq major-mode 'occur-edit-mode) ; skip the first occurrence
                    (next-single-char-property-change 1 'read-only)
                  (point-min)))
           (end (point-max)))
-      ;; Get the occurrence and iedit-only-complete-symbol-local
+      ;; Get the occurrence and iedit-occurrence-type-local
       (cond ((and arg
                   (= 4 (prefix-numeric-value arg))
                   iedit-last-occurrence-local)
@@ -350,13 +355,12 @@ Keymap used within overlays:
                   (= 16 (prefix-numeric-value arg))
                   iedit-last-initial-string-global)
              (setq occurrence iedit-last-initial-string-global)
-             (setq iedit-only-complete-symbol-local iedit-only-complete-symbol-global))
+             (setq iedit-occurrence-type-local iedit-occurrence-type-global))
             ((iedit-region-active)
              (setq occurrence  (buffer-substring-no-properties
                                 (mark) (point)))
-             (setq iedit-only-complete-symbol-local nil))
-            (t (setq iedit-only-complete-symbol-local t); might be changed by iedit-default-occurrence
-               (setq occurrence (funcall iedit-default-occurrence))
+             (setq iedit-occurrence-type-local 'selection))
+            (t (setq occurrence (iedit-default-occurrence))
                (unless occurrence
                  (error "No candidate of the occurrence, cannot enable Iedit mode"))))
       ;; Get the scope
@@ -427,11 +431,37 @@ Keymap used within overlays:
   (add-hook 'change-major-mode-hook 'iedit-done nil t)
   (add-hook 'iedit-aborting-hook 'iedit-done nil t))
 
+(defun iedit-default-occurrence()
+  "This function returns a string as occurrence candidate."
+  (let (occurrence-str)
+    (cond
+     ((thing-at-point 'url)
+      (setq occurrence-str (thing-at-point 'url))
+      (setq iedit-occurrence-type-local 'url))
+
+     ((thing-at-point 'email)
+      (setq occurrence-str (thing-at-point 'email))
+      (setq iedit-occurrence-type-local 'email))
+
+     (iedit-default-occurrence-mode-local
+      (funcall iedit-default-occurrence-mode-local))
+
+     ((and iedit-use-symbol-boundaries ;option
+           (thing-at-point 'symbol))
+      (setq occurrence-str (thing-at-point 'symbol))
+      (setq iedit-occurrence-type-local 'symbol))
+
+     ((thing-at-point 'word)
+      (setq occurrence-str (thing-at-point 'word))
+      (setq iedit-occurrence-type-local 'word)))
+    occurrence-str))
+
 (defun iedit-regexp-quote (exp)
   "Return a regexp string."
-  (if iedit-only-complete-symbol-local
-      (concat "\\_<" (regexp-quote exp) "\\_>")
-    (regexp-quote exp)))
+  (cl-case iedit-occurrence-type-local
+    ('symbol (concat "\\_<" (regexp-quote exp) "\\_>"))
+    ('word   (concat "\\<" (regexp-quote exp) "\\>"))
+    ( t      (regexp-quote exp))))
 
 (defun iedit-start2 (occurrence-regexp beg end)
   "Refresh Iedit mode."
@@ -452,6 +482,7 @@ the initial string globally."
   (when iedit-buffering
       (iedit-stop-buffering))
   (setq iedit-last-occurrence-local (iedit-current-occurrence-string))
+  (setq iedit-occurrence-type-global iedit-occurrence-type-local)
   (setq iedit-last-occurrence-global iedit-last-occurrence-local)
   (setq iedit-last-initial-string-global iedit-initial-string-local)
   (if iedit-last-occurrence-local
@@ -495,8 +526,9 @@ the initial string globally."
     (when case-fold-search
       (setq occurrence-exp (downcase occurrence-exp))
       (setq replacement (downcase replacement)))
-    (if iedit-only-complete-symbol-global
-        (setq occurrence-exp (concat "\\_<"  occurrence-exp "\\_>")))
+    ;; `iedit-regexp-quote' depends on iedit-occurrence-type-local
+    (setq iedit-occurrence-type-local iedit-occurrence-type-global)
+    (setq occurrence-exp (iedit-regexp-quote  occurrence-exp))
     (when (iedit-region-active)
       (setq beg (region-beginning))
       (setq end (region-end)))

@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-05-17 11:46:10 Victor Ren>
+;; Time-stamp: <2016-06-17 10:38:46 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.97
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -114,7 +114,7 @@ foo"
      (iedit-mode)
      (should (= 4 (length iedit-occurrences-overlays)))
      (should (string= iedit-initial-string-local "foo"))
-     (should (null iedit-only-complete-symbol-local))
+     (should (eq 'selection iedit-occurrence-type-local))
      (goto-char 1)
      (set-mark-command nil)
      (forward-line 3)
@@ -135,7 +135,7 @@ foo"
      (iedit-mode)
      (should (= 7 (length iedit-occurrences-overlays)))
      (should (string= iedit-initial-string-local "foo"))
-     (should (null iedit-only-complete-symbol-local))
+     (should (eq 'selection iedit-occurrence-type-local))
      (goto-char 1)
      (insert "123")
      (should (string= (buffer-string)
