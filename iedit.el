@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-17 11:28:45 Victor Ren>
+;; Time-stamp: <2016-06-18 19:05:54 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.9.9
@@ -423,9 +423,22 @@ Keymap used within overlays:
   (setq iedit-skip-modification-once t)
   (setq iedit-unmatched-lines-invisible iedit-unmatched-lines-invisible-default)
   (setq iedit-initial-region (list beg end))
-  (message "%d matches for \"%s\""
-           (iedit-start2 occurrence-regexp beg end)
-           (iedit-printable occurrence-regexp))
+  (let ((counter 0))
+    (when (null sgml-electric-tag-pair-mode)
+      (setq iedit-occurrence-keymap iedit-occurrence-keymap-default)
+      (setq counter (iedit-make-sgml-pair)))
+    (when (= 0 counter)
+      (setq iedit-occurrence-keymap iedit-mode-occurrence-keymap)
+      (setq counter (iedit-make-occurrences-overlays occurrence-regexp beg end)))
+    (message "%d matches for \"%s\""
+             counter
+             (iedit-printable occurrence-regexp))
+    (setq iedit-mode
+          (propertize
+           (concat " Iedit:" (number-to-string counter))
+           'face
+           'font-lock-warning-face))
+    (force-mode-line-update))
   (run-hooks 'iedit-mode-hook)
   (add-hook 'kbd-macro-termination-hook 'iedit-done nil t)
   (add-hook 'change-major-mode-hook 'iedit-done nil t)
@@ -463,16 +476,43 @@ Keymap used within overlays:
     ('word   (concat "\\<" (regexp-quote exp) "\\>"))
     ( t      (regexp-quote exp))))
 
-(defun iedit-start2 (occurrence-regexp beg end)
-  "Refresh Iedit mode."
-  (setq iedit-occurrence-keymap iedit-mode-occurrence-keymap)
-  (let ((counter (iedit-make-occurrences-overlays occurrence-regexp beg end)))
-    (setq iedit-mode
-          (propertize
-           (concat " Iedit:" (number-to-string counter))
-           'face
-           'font-lock-warning-face))
-    (force-mode-line-update)
+(defun iedit-make-sgml-pair ()
+  "If the cursor is on a markup tag, only create occurrence
+overlay on the opening and closing markup tag.
+
+The code is adpated from `sgml-electric-tag-pair-before-change-function'.
+Return 2 if succeeded, 0 if failed."
+  (let ((counter 0))
+    (save-excursion
+      (skip-chars-backward "[:alnum:]-_.:")
+      (if  (or (eq (char-before) ?<)
+               (and (eq (char-before) ?/)
+                    (eq (char-before (1- (point))) ?<)))
+          (let* ((endp (eq (char-before) ?/))
+                 (cl-start (point))
+                 (cl-end (progn (skip-chars-forward "[:alnum:]-_.:") (point)))
+                 (match
+                  (if endp
+                      (when (sgml-skip-tag-backward 1) (forward-char 1) t)
+                    (with-syntax-table sgml-tag-syntax-table
+                      (up-list -1)
+                      (when (sgml-skip-tag-forward 1)
+                        (backward-sexp 1)
+                        (forward-char 2)
+                        t)))))
+            (when (and match
+                       (/= cl-end cl-start)
+                       (equal (buffer-substring cl-start cl-end)
+                              (buffer-substring (point)
+                                                (save-excursion
+                                                  (skip-chars-forward "[:alnum:]-_.:")
+                                                  (point))))
+                       (or (not endp) (eq (char-after cl-end) ?>)))
+              (setq iedit-initial-string-local (buffer-substring cl-start cl-end))
+              (push (iedit-make-occurrence-overlay cl-start cl-end) iedit-occurrences-overlays)
+              (push (iedit-make-occurrence-overlay (point) (+ (point) (- cl-end cl-start))) iedit-occurrences-overlays)
+              (setq counter 2)
+              ))))
     counter))
 
 (defun iedit-done ()
@@ -584,13 +624,12 @@ the initial string globally."
            (if (= 1 (length iedit-occurrences-overlays)) "" "es")))
 
 (defun iedit-expand-by-a-line (where amount)
-  "After restricting iedit to the current line with
-`iedit-restrict-current-line', this function expands the top or
-bottom of the search region upwards or downwards by `amount'
-lines. The region being acted upon is controlled with
-`where' ('top to act on the top, anything else for the
-bottom). With a prefix, collapses the top or bottom of the search
-region by `amount' lines."
+  "After start iedit-mode with only current symbol or the active
+region, this function expands the top or bottom of the search
+region upwards or downwards by `amount' lines. The region being
+acted upon is controlled with `where' ('top to act on the top,
+anything else for the bottom). With a prefix, collapses the top
+or bottom of the search region by `amount' lines."
   (interactive "P")
   (let ((occurrence (iedit-current-occurrence-string)))
     (iedit-cleanup)
@@ -687,7 +726,6 @@ prefix, bring the top of the region back down one occurrence."
                       'face 'font-lock-warning-face))
     (force-mode-line-update)))
 
-
 (defun iedit-toggle-case-sensitive ()
   "Toggle case-sensitive matching occurrences. "
   (interactive)
@@ -701,13 +739,19 @@ prefix, bring the top of the region back down one occurrence."
     (let* ((occurrence-regexp (iedit-regexp-quote iedit-last-occurrence-local))
            (begin (car iedit-initial-region))
            (end (cadr iedit-initial-region))
-           (counter (iedit-start2 occurrence-regexp begin end)))
+           (counter (iedit-make-occurrences-overlays occurrence-regexp begin end)))
       (message "iedit %s. %d matches for \"%s\""
                (if iedit-case-sensitive
                    "is case sensitive"
                  "ignores case")
                counter
-               (iedit-printable occurrence-regexp)))))
+               (iedit-printable occurrence-regexp))
+      (setq iedit-mode
+            (propertize
+             (concat " Iedit:" (number-to-string counter))
+             'face
+             'font-lock-warning-face))
+      (force-mode-line-update))))
 
 (provide 'iedit)
 

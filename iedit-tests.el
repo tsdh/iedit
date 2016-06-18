@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-17 10:38:46 Victor Ren>
+;; Time-stamp: <2016-06-18 18:00:27 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.97
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -120,6 +120,31 @@ foo"
      (forward-line 3)
      (iedit-mode 4)
      (should (= 1 (length iedit-occurrences-overlays))))))
+
+(ert-deftest iedit-mode-with-tag-pair-test ()
+  (with-iedit-test-fixture
+   "<div> foo </div>
+<div> bar </div>
+<div> foobar </div>
+div
+foobar
+ foo
+ bar
+foo"
+   (lambda ()
+     (iedit-mode)
+     (goto-char 2)
+     (iedit-mode)
+     (should (= 2 (length iedit-occurrences-overlays)))
+     (should (string= iedit-initial-string-local "div"))
+     ;; (should (eq 'tag iedit-occurrence-type-local))
+     (iedit-mode)
+     (sgml-electric-tag-pair-mode t)
+     (iedit-mode)
+     (should (= 3 (length iedit-occurrences-overlays)))
+     (should (string= iedit-initial-string-local "<div>"))
+     (should (eq 'symbol iedit-occurrence-type-local))
+     (sgml-electric-tag-pair-mode))))
 
 (ert-deftest iedit-move-conjointed-overlays-test ()
   (with-iedit-test-fixture
