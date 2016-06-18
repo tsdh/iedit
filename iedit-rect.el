@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-14 00:05:58 Victor Ren>
+;; Time-stamp: <2016-06-18 19:59:23 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.9.9
@@ -156,7 +156,7 @@ Commands:
 Save the current occurrence string locally and globally.  Save
 the initial string globally."
   (when iedit-buffering
-      (iedit-stop-buffering))
+    (iedit-stop-buffering))
   (iedit-cleanup)
   (setq iedit-rectangle-mode nil)
   (force-mode-line-update)

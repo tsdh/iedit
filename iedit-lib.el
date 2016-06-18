@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-14 13:36:50 Victor Ren>
+;; Time-stamp: <2016-06-18 23:54:01 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.9.9
@@ -57,11 +57,6 @@
 
 (defcustom iedit-case-sensitive-default t
   "If no-nil, matching is case sensitive."
-  :type 'boolean
-  :group 'iedit)
-
-(defcustom iedit-unmatched-lines-invisible-default nil
-  "If no-nil, hide lines that do not cover any occurrences by default."
   :type 'boolean
   :group 'iedit)
 
@@ -204,6 +199,13 @@ It should be set before occurrence overlay is created.")
   (interactive)
   (run-hooks 'iedit-aborting-hook))
 
+(defun iedit-make-markers-overlays (markers)
+  "Create occurrence overlays on a list of markers."
+  (set iedit-occurrences-overlays
+       (mapcar #'(lambda (marker)
+                   (iedit-make-occurrence-overlay (car marker) (cdr marker)))
+               markers)))
+
 (defun iedit-make-occurrences-overlays (occurrence-regexp beg end)
   "Create occurrence overlays for `occurrence-regexp' in a region.
 Return the number of occurrences."
@@ -227,11 +229,8 @@ Return the number of occurrences."
                       iedit-read-only-occurrences-overlays)
               (push (iedit-make-occurrence-overlay beginning ending)
                     iedit-occurrences-overlays))
-            (setq counter (1+ counter))))
-        (when (/= 0 counter)
-          (if iedit-unmatched-lines-invisible
-              (iedit-hide-unmatched-lines iedit-occurrence-context-lines))))
-      counter)))
+            (setq counter (1+ counter))))))
+    counter))
 
 (defun iedit-add-next-occurrence-overlay (occurrence-exp &optional point)
   "Create next occurrence overlay for `occurrence-exp'."
@@ -262,8 +261,10 @@ Return the start position of the new occurrence if successful."
                                              (match-end 0))
               iedit-occurrences-overlays)
         (message "Add one match for \"%s\"." (iedit-printable occurrence-exp))
-        (if iedit-unmatched-lines-invisible
-            (iedit-hide-unmatched-lines iedit-occurrence-context-lines))))
+        (when iedit-unmatched-lines-invisible
+          (iedit-show-all)
+          (iedit-hide-unmatched-lines iedit-occurrence-context-lines))
+        ))
     pos))
 
 (defun iedit-add-region-as-occurrence (beg end)

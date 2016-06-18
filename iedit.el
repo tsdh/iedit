@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-18 19:05:54 Victor Ren>
+;; Time-stamp: <2016-06-18 23:44:13 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.9.9
@@ -421,7 +421,6 @@ Keymap used within overlays:
   ;; enforce skip modification once, errors may happen to cause this to be
   ;; unset.
   (setq iedit-skip-modification-once t)
-  (setq iedit-unmatched-lines-invisible iedit-unmatched-lines-invisible-default)
   (setq iedit-initial-region (list beg end))
   (let ((counter 0))
     (when (null sgml-electric-tag-pair-mode)
@@ -624,12 +623,11 @@ the initial string globally."
            (if (= 1 (length iedit-occurrences-overlays)) "" "es")))
 
 (defun iedit-expand-by-a-line (where amount)
-  "After start iedit-mode with only current symbol or the active
-region, this function expands the top or bottom of the search
-region upwards or downwards by `amount' lines. The region being
-acted upon is controlled with `where' ('top to act on the top,
-anything else for the bottom). With a prefix, collapses the top
-or bottom of the search region by `amount' lines."
+  "Expands the top or bottom of the search region upwards or
+downwards by `amount' lines. The region being acted upon is
+controlled with `where' ('top to act on the top, anything else
+for the bottom). With a prefix, collapses the top or bottom of
+the search region by `amount' lines."
   (interactive "P")
   (let ((occurrence (iedit-current-occurrence-string)))
     (iedit-cleanup)
@@ -648,19 +646,19 @@ or bottom of the search region by `amount' lines."
              (if (= 1 (length iedit-occurrences-overlays)) "" "es"))))
 
 (defun iedit-expand-up-a-line (&optional arg)
-  "After restricting iedit to the current line with
-`iedit-restrict-current-line', this function expands the search
-region upwards by one line.  With a prefix, bring the top of the
-region back down one line."
+  "After start iedit-mode only on current symbol or the active
+region, this function expands the search region upwards by one
+line.  With a prefix, bring the top of the region back down one
+line."
   (interactive "P")
   (iedit-expand-by-a-line 'top
                           (if arg -1 1)))
 
 (defun iedit-expand-down-a-line (&optional arg)
-  "After restricting iedit to the current line with
-`iedit-restrict-current-line', this function expands the search
-region downwards by one line.  With a prefix, bring the bottom of
-the region back up one line."
+  "After start iedit-mode only on current symbol or the active
+region, this function expands the search region downwards by one
+line.  With a prefix, bring the bottom of the region back up one
+line."
   (interactive "P")
   (iedit-expand-by-a-line 'bottom
                           (if arg -1 1)))
