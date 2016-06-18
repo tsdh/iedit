@@ -423,7 +423,7 @@ Keymap used within overlays:
   (setq iedit-skip-modification-once t)
   (setq iedit-initial-region (list beg end))
   (let ((counter 0))
-    (when (null sgml-electric-tag-pair-mode)
+    (unless (bound-and-true-p sgml-electric-tag-pair-mode)
       (setq iedit-occurrence-keymap iedit-occurrence-keymap-default)
       (setq counter (iedit-make-sgml-pair)))
     (when (= 0 counter)
