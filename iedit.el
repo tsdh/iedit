@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-20 10:50:24 Victor Ren>
+;; Time-stamp: <2016-06-21 22:54:56 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.9.9
@@ -419,11 +419,11 @@ Keymap used within overlays:
   (setq iedit-skip-modification-once t)
   (setq iedit-initial-region (list beg end))
   (let ((counter 0))
-    ;; Try to make sgml pair first
-    (unless (bound-and-true-p sgml-electric-tag-pair-mode)
-      (setq iedit-occurrence-keymap iedit-occurrence-keymap-default)
-      (setq counter (iedit-make-sgml-pair)))
-    (when (= 0 counter)
+    (if (eq iedit-occurrence-type-local 'markup-tag)
+        (progn
+          (setq iedit-occurrence-keymap iedit-occurrence-keymap-default)
+          (iedit-make-markers-overlays iedit-occurrences-overlays)
+          (setq counter (length iedit-occurrences-overlays)))
       (setq iedit-occurrence-keymap iedit-mode-occurrence-keymap)
       (setq counter (iedit-make-occurrences-overlays occurrence-regexp beg end)))
     (message "%d matches for \"%s\""
@@ -455,6 +455,10 @@ Keymap used within overlays:
 
      (iedit-default-occurrence-mode-local
       (funcall iedit-default-occurrence-mode-local))
+     ;; Try to mark sgml pair anyway
+     ((and (not (bound-and-true-p sgml-electric-tag-pair-mode))
+           (setq occurrence-str (iedit-mark-sgml-pair)))
+      (setq iedit-occurrence-type-local 'markup-tag))
 
      ((and iedit-use-symbol-boundaries ;option
            (thing-at-point 'symbol))
@@ -473,44 +477,44 @@ Keymap used within overlays:
     ('word   (concat "\\<" (regexp-quote exp) "\\>"))
     ( t      (regexp-quote exp))))
 
-(defun iedit-make-sgml-pair ()
-  "If the cursor is on a markup tag, only create occurrence
-overlay on the opening and closing markup tag.
+(defun iedit-mark-sgml-pair ()
+  "Check if the cursor is on a markup tag.
+If the cursor is on a markup tag, the postion of the opening and
+closing markup tags are saved in `iedit-occurrence-overlays'
+temporarily.
 
-The code is adpated from `sgml-electric-tag-pair-before-change-function'.
-Return 2 if succeeded, 0 if failed."
-  (let ((counter 0))
-    (save-excursion
-      (skip-chars-backward "[:alnum:]-_.:")
-      (if  (or (eq (char-before) ?<)
-               (and (eq (char-before) ?/)
-                    (eq (char-before (1- (point))) ?<)))
-          (let* ((endp (eq (char-before) ?/))
-                 (cl-start (point))
-                 (cl-end (progn (skip-chars-forward "[:alnum:]-_.:") (point)))
-                 (match
-                  (if endp
-                      (when (sgml-skip-tag-backward 1) (forward-char 1) t)
-                    (with-syntax-table sgml-tag-syntax-table
-                      (up-list -1)
-                      (when (sgml-skip-tag-forward 1)
-                        (backward-sexp 1)
-                        (forward-char 2)
-                        t)))))
-            (when (and match
-                       (/= cl-end cl-start)
-                       (equal (buffer-substring cl-start cl-end)
-                              (buffer-substring (point)
-                                                (save-excursion
-                                                  (skip-chars-forward "[:alnum:]-_.:")
-                                                  (point))))
-                       (or (not endp) (eq (char-after cl-end) ?>)))
-              (setq iedit-initial-string-local (buffer-substring cl-start cl-end))
-              (push (iedit-make-occurrence-overlay cl-start cl-end) iedit-occurrences-overlays)
-              (push (iedit-make-occurrence-overlay (point) (+ (point) (- cl-end cl-start))) iedit-occurrences-overlays)
-              (setq counter 2)
-              ))))
-    counter))
+The code is adpated from
+`sgml-electric-tag-pair-before-change-function'.
+
+Return the tag if succeeded, nil if failed."
+  (save-excursion
+    (skip-chars-backward "[:alnum:]-_.:")
+    (if  (or (eq (char-before) ?<)
+             (and (eq (char-before) ?/)
+                  (eq (char-before (1- (point))) ?<)))
+        (let* ((endp (eq (char-before) ?/))
+               (cl-start (point))
+               (cl-end (progn (skip-chars-forward "[:alnum:]-_.:") (point)))
+               (match
+                (if endp
+                    (when (sgml-skip-tag-backward 1) (forward-char 1) t)
+                  (with-syntax-table sgml-tag-syntax-table
+                    (up-list -1)
+                    (when (sgml-skip-tag-forward 1)
+                      (backward-sexp 1)
+                      (forward-char 2)
+                      t)))))
+          (when (and match
+                     (/= cl-end cl-start)
+                     (equal (buffer-substring cl-start cl-end)
+                            (buffer-substring (point)
+                                              (save-excursion
+                                                (skip-chars-forward "[:alnum:]-_.:")
+                                                (point))))
+                     (or (not endp) (eq (char-after cl-end) ?>)))
+            (push (cons cl-start cl-end) iedit-occurrences-overlays)
+            (push (cons (point) (+ (point) (- cl-end cl-start))) iedit-occurrences-overlays)
+            (buffer-substring cl-start cl-end))))))
 
 (defun iedit-done ()
   "Exit Iedit mode.

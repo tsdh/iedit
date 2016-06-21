@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-18 23:54:01 Victor Ren>
+;; Time-stamp: <2016-06-21 22:53:48 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.9.9
@@ -201,7 +201,7 @@ It should be set before occurrence overlay is created.")
 
 (defun iedit-make-markers-overlays (markers)
   "Create occurrence overlays on a list of markers."
-  (set iedit-occurrences-overlays
+  (setq iedit-occurrences-overlays
        (mapcar #'(lambda (marker)
                    (iedit-make-occurrence-overlay (car marker) (cdr marker)))
                markers)))
