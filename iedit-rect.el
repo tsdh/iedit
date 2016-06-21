@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-18 19:59:23 Victor Ren>
+;; Time-stamp: <2016-06-20 00:12:11 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.9.9
@@ -147,6 +147,7 @@ Commands:
          'face
          'font-lock-warning-face))
   (force-mode-line-update)
+  (add-hook 'before-revert-hook 'iedit-rectangle-done nil t)
   (add-hook 'kbd-macro-termination-hook 'iedit-rectangle-done nil t)
   (add-hook 'change-major-mode-hook 'iedit-rectangle-done nil t)
   (add-hook 'iedit-aborting-hook 'iedit-rectangle-done nil t))
@@ -160,6 +161,7 @@ the initial string globally."
   (iedit-cleanup)
   (setq iedit-rectangle-mode nil)
   (force-mode-line-update)
+  (remove-hook 'before-revert-hook 'iedit-rectangle-done t)
   (remove-hook 'kbd-macro-termination-hook 'iedit-rectangle-done t)
   (remove-hook 'change-major-mode-hook 'iedit-rectangle-done t)
   (remove-hook 'iedit-aborting-hook 'iedit-rectangle-done t))

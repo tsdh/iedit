@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-18 23:44:13 Victor Ren>
+;; Time-stamp: <2016-06-20 10:50:24 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.9.9
@@ -275,10 +275,6 @@ This is like `describe-bindings', but displays only Iedit keys."
     (setq minor-mode-map-alist
           (cons (cons 'iedit-mode iedit-mode-keymap) minor-mode-map-alist)))
 
-;; Avoid to restore Iedit mode when restoring desktop
-(add-to-list 'desktop-minor-mode-handlers
-             '(iedit-mode . nil))
-
 ;;;###autoload
 (defun iedit-mode (&optional arg)
   "Toggle Iedit mode.
@@ -423,6 +419,7 @@ Keymap used within overlays:
   (setq iedit-skip-modification-once t)
   (setq iedit-initial-region (list beg end))
   (let ((counter 0))
+    ;; Try to make sgml pair first
     (unless (bound-and-true-p sgml-electric-tag-pair-mode)
       (setq iedit-occurrence-keymap iedit-occurrence-keymap-default)
       (setq counter (iedit-make-sgml-pair)))
@@ -439,6 +436,7 @@ Keymap used within overlays:
            'font-lock-warning-face))
     (force-mode-line-update))
   (run-hooks 'iedit-mode-hook)
+  (add-hook 'before-revert-hook 'iedit-done nil t)
   (add-hook 'kbd-macro-termination-hook 'iedit-done nil t)
   (add-hook 'change-major-mode-hook 'iedit-done nil t)
   (add-hook 'iedit-aborting-hook 'iedit-done nil t))
@@ -534,6 +532,7 @@ the initial string globally."
   (setq iedit-initial-string-local nil)
   (setq iedit-mode nil)
   (force-mode-line-update)
+  (remove-hook 'before-revert-hook 'iedit-done t)
   (remove-hook 'kbd-macro-termination-hook 'iedit-done t)
   (remove-hook 'change-major-mode-hook 'iedit-done t)
   (remove-hook 'iedit-aborting-hook 'iedit-done t)
