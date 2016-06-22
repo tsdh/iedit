@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-21 22:54:56 Victor Ren>
+;; Time-stamp: <2016-06-22 23:58:50 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.9.9
@@ -67,7 +67,6 @@
 
 ;;; todo:
 ;; - Add more easy access keys for whole occurrence
-;; - pair in html
 
 ;;; Contributors
 ;; Adam Lindberg <eproxus@gmail.com> added a case sensitivity option that can be toggled.
@@ -134,14 +133,14 @@ point should be included in the replacement region.")
   "This is a global variable indicating how many lines down from
 point should be included in the replacement region.")
 
-(defvar iedit-default-occurrence-mode-local nil
-  "This is a mode special function get a string as occurrence candidate.
-It is called in `iedit-default-occurrence'.  This local buffer
+(defvar iedit-default-occurrence-local nil
+  "This is a buffer local function get a string as occurrence candidate.
+It is called in `iedit-default-occurrence'.  This buffer local
 varialbe can be configured in some modes.  An example of how to
 use this variable:
 (add-hook 'perl-mode-hook
           '(lambda ()
-             (setq iedit-default-occurrence-mode-local
+             (setq iedit-default-occurrence-local
                    '(lambda ()
                       (let* ((bound (bounds-of-thing-at-point 'symbol))
                              (prefix-char (char-after (1- (car bound)))))
@@ -158,7 +157,7 @@ use this variable:
 (make-variable-buffer-local 'iedit-last-occurrence-local)
 (make-variable-buffer-local 'iedit-initial-string-local)
 (make-variable-buffer-local 'iedit-initial-region)
-(make-variable-buffer-local 'iedit-default-occurrence-mode-local)
+(make-variable-buffer-local 'iedit-default-occurrence-local)
 
 (or (assq 'iedit-mode minor-mode-alist)
     (nconc minor-mode-alist
@@ -288,12 +287,10 @@ region in the buffer (possibly narrowed) or a region are
 highlighted.  If one occurrence is modified, the change are
 propagated to all other occurrences simultaneously.
 
-If region is not active, the current symbol (returns from
-`iedit-default-occurrence') is used as the occurrence by default.
-The occurrences of the current symbol, but not include
-occurrences that are part of other symbols, are highlighted.  If
-you still want to match all the occurrences, even though they are
-parts of other symbols, you may have to mark the symbol first.
+If region is not active, `iedit-default-occurrence' is called to
+get an occurrence candidate, according to the thing at point.  It
+might be url, email address, markup tag or current symbol(or
+word) .
 
 In the above two situations, with digit prefix argument 0, only
 occurrences in current function are matched.  This is good for
@@ -423,7 +420,7 @@ Keymap used within overlays:
         (progn
           (setq iedit-occurrence-keymap iedit-occurrence-keymap-default)
           (iedit-make-markers-overlays iedit-occurrences-overlays)
-          (setq counter (length iedit-occurrences-overlays)))
+          (setq counter 2))
       (setq iedit-occurrence-keymap iedit-mode-occurrence-keymap)
       (setq counter (iedit-make-occurrences-overlays occurrence-regexp beg end)))
     (message "%d matches for \"%s\""
@@ -442,7 +439,8 @@ Keymap used within overlays:
   (add-hook 'iedit-aborting-hook 'iedit-done nil t))
 
 (defun iedit-default-occurrence()
-  "This function returns a string as occurrence candidate."
+  "This function returns a string as occurrence candidate.
+The candidate depends on the thing at point."
   (let (occurrence-str)
     (cond
      ((thing-at-point 'url)
@@ -453,8 +451,8 @@ Keymap used within overlays:
       (setq occurrence-str (thing-at-point 'email))
       (setq iedit-occurrence-type-local 'email))
 
-     (iedit-default-occurrence-mode-local
-      (funcall iedit-default-occurrence-mode-local))
+     (iedit-default-occurrence-local
+      (funcall iedit-default-occurrence-local))
      ;; Try to mark sgml pair anyway
      ((and (not (bound-and-true-p sgml-electric-tag-pair-mode))
            (setq occurrence-str (iedit-mark-sgml-pair)))
