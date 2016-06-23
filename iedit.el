@@ -452,7 +452,7 @@ The candidate depends on the thing at point."
       (setq iedit-occurrence-type-local 'email))
 
      (iedit-default-occurrence-local
-      (funcall iedit-default-occurrence-local))
+      (setq occurrence-str (funcall iedit-default-occurrence-local)))
      ;; Try to mark sgml pair anyway
      ((and (not (bound-and-true-p sgml-electric-tag-pair-mode))
            (setq occurrence-str (iedit-mark-sgml-pair)))
