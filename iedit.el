@@ -146,8 +146,8 @@ use this variable:
                              (prefix-char (char-after (1- (car bound)))))
                         (if (memq prefix-char '(?$ ?% ?@ ?*))
                             (progn
-                              (setq iedit-occurrence-type-local 'other)
-                              (buffer-substring-no-properties (1- (car bound)) (cdr bound)))
+                              (setq iedit-occurrence-type-local 'regexp)
+                              (concat (regexp-quote (buffer-substring-no-properties (1- (car bound)) (cdr bound))) \"\\\\_>\"))
                           (buffer-substring-no-properties (car bound) (cdr bound))))))))
 '$%@*' will be included in the occurrences in perl mode.")
 
@@ -473,6 +473,7 @@ The candidate depends on the thing at point."
   (cl-case iedit-occurrence-type-local
     ('symbol (concat "\\_<" (regexp-quote exp) "\\_>"))
     ('word   (concat "\\<" (regexp-quote exp) "\\>"))
+    ('regexp exp)
     ( t      (regexp-quote exp))))
 
 (defun iedit-mark-sgml-pair ()
