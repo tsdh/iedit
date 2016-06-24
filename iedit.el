@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-22 23:58:50 Victor Ren>
+;; Time-stamp: <2016-06-23 13:55:31 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.9.9
@@ -485,6 +485,7 @@ The code is adpated from
 `sgml-electric-tag-pair-before-change-function'.
 
 Return the tag if succeeded, nil if failed."
+  (condition-case err
   (save-excursion
     (skip-chars-backward "[:alnum:]-_.:")
     (if  (or (eq (char-before) ?<)
@@ -512,7 +513,8 @@ Return the tag if succeeded, nil if failed."
                      (or (not endp) (eq (char-after cl-end) ?>)))
             (push (cons cl-start cl-end) iedit-occurrences-overlays)
             (push (cons (point) (+ (point) (- cl-end cl-start))) iedit-occurrences-overlays)
-            (buffer-substring cl-start cl-end))))))
+            (buffer-substring cl-start cl-end)))))
+  (error nil)))
 
 (defun iedit-done ()
   "Exit Iedit mode.
