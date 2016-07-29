@@ -8,10 +8,10 @@ feedback as you type.
 
 Normal scenario of Iedit mode is like:
 
- - Highlight certain contents - by press C-; (The default key binding)
-   All occurrences of a symbol, string or a rectangle in the buffer or a region
-   may be highlighted corresponding to current mark, point and prefix
-   argument. Refer to the document of `iedit-mode' for details.
+ - Highlight certain contents - by press C-; (The default key binding) All
+   occurrences of a symbol, string or a region in the buffer may be highlighted
+   corresponding to current mark, point and prefix argument.  Refer to the
+   document of `iedit-mode' for details.
 
  - Edit one of the occurrences
    The change is applied to other occurrences simultaneously.
