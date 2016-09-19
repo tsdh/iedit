@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-18 18:00:27 Victor Ren>
+;; Time-stamp: <2016-09-20 00:28:29 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.97
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -43,7 +43,10 @@
      (when (get-buffer ,buffer-name)
        (kill-buffer ,buffer-name))
      (with-current-buffer (get-buffer-create ,buffer-name)
-       ,@body)))
+       ;; Give the current temp buffer a window. Otherwise `recenter' will
+       ;; trigger an error message.
+       (progn (set-window-buffer nil ,buffer-name)
+              ,@body))))
 
 (defun marker-position-list (l)
   "convert list of markers to positions"
@@ -242,6 +245,7 @@ fob")))))
      (should (string= iedit-initial-string-local "foo"))
      (iedit-mode)
      (with-temp-buffer
+       (set-window-buffer nil (current-buffer))
        (insert "bar foo foo")
        (goto-char 1)
        (iedit-mode 16)
