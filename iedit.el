@@ -150,6 +150,14 @@ use this variable:
                           (buffer-substring-no-properties (car bound) (cdr bound))))))))
 '$%@*' will be included in the occurrences in perl mode.")
 
+(defcustom iedit-mode-line
+  `(" Iedit:" (:eval (format ,(propertize "%d" 'face 'font-lock-warning-face)
+                             (iedit-counter))))
+  "Mode-line format for Iedit.
+This should be set before Iedit is loaded."
+  :group 'iedit)
+(put 'iedit-mode-line 'risky-local-variable t)
+
 (make-variable-buffer-local 'iedit-mode)
 (make-variable-buffer-local 'iedit-use-symbol-boundaries)
 (make-variable-buffer-local 'iedit-occurrence-type-local)
@@ -160,7 +168,7 @@ use this variable:
 
 (or (assq 'iedit-mode minor-mode-alist)
     (nconc minor-mode-alist
-           (list '(iedit-mode iedit-mode))))
+           (list `(iedit-mode ,iedit-mode-line))))
 
 ;;; Define iedit help map.
 (eval-when-compile (require 'help-macro))
@@ -222,6 +230,10 @@ This is like `describe-bindings', but displays only Iedit keys."
   (interactive)
   (let (same-window-buffer-names same-window-regexps)
     (describe-function 'iedit-mode)))
+
+(defun iedit-counter ()
+  "Return the number of active occurrences."
+  (length iedit-occurrences-overlays))
 
 ;;; Default key bindings:
 (when (and iedit-toggle-key-default (null (where-is-internal 'iedit-mode)))
@@ -425,12 +437,7 @@ Keymap used within overlays:
     (message "%d matches for \"%s\""
              counter
              (iedit-printable occurrence-regexp))
-    (setq iedit-mode
-          (propertize
-           (concat " Iedit:" (number-to-string counter))
-           'face
-           'font-lock-warning-face))
-    (force-mode-line-update))
+    (setq iedit-mode t))
   (run-hooks 'iedit-mode-hook)
   (add-hook 'before-revert-hook 'iedit-done nil t)
   (add-hook 'kbd-macro-termination-hook 'iedit-done nil t)
@@ -600,10 +607,6 @@ the initial string globally."
                          (point-min)))
             (iedit-add-next-occurrence-overlay
              (iedit-regexp-quote current-occurrence-string)))
-          (setq iedit-mode (propertize
-                            (concat " Iedit:" (number-to-string
-                                               (length iedit-occurrences-overlays)))
-                            'face 'font-lock-warning-face))
           (force-mode-line-update))))))
 
 (defun iedit-restrict-function(&optional arg)
@@ -702,10 +705,6 @@ prefix, bring the top of the region back down one occurrence."
                 forward)))
     (when pos
       (goto-char pos)
-      (setq iedit-mode (propertize
-                        (concat " Iedit:" (number-to-string
-                                           (length iedit-occurrences-overlays)))
-                        'face 'font-lock-warning-face))
       (force-mode-line-update))))
 
 (defun iedit-restrict-region (beg end &optional inclusive)
@@ -721,10 +720,6 @@ prefix, bring the top of the region back down one occurrence."
     (iedit-cleanup-occurrences-overlays beg end inclusive)
     (if iedit-unmatched-lines-invisible
         (iedit-hide-unmatched-lines iedit-occurrence-context-lines))
-    (setq iedit-mode (propertize
-                      (concat " Iedit:" (number-to-string
-                                         (length iedit-occurrences-overlays)))
-                      'face 'font-lock-warning-face))
     (force-mode-line-update)))
 
 (defun iedit-toggle-case-sensitive ()
@@ -747,11 +742,6 @@ prefix, bring the top of the region back down one occurrence."
                  "ignores case")
                counter
                (iedit-printable occurrence-regexp))
-      (setq iedit-mode
-            (propertize
-             (concat " Iedit:" (number-to-string counter))
-             'face
-             'font-lock-warning-face))
       (force-mode-line-update))))
 
 (provide 'iedit)
