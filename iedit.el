@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-10-27 10:28:30 Victor Ren>
+;; Time-stamp: <2016-12-19 14:15:36 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.9.9.9
@@ -301,7 +301,7 @@ propagated to all other occurrences simultaneously.
 If region is not active, `iedit-default-occurrence' is called to
 get an occurrence candidate, according to the thing at point.  It
 might be url, email address, markup tag or current symbol(or
-word) .
+word).
 
 In the above two situations, with digit prefix argument 0, only
 occurrences in current function are matched.  This is good for
@@ -632,9 +632,8 @@ the initial string globally."
   "Expands the top or bottom of the search region upwards or
 downwards by `amount' lines. The region being acted upon is
 controlled with `where' ('top to act on the top, anything else
-for the bottom). With a prefix, collapses the top or bottom of
-the search region by `amount' lines."
-  (interactive "P")
+for the bottom).  If amount is negative, collapses the top or
+bottom of the search region by `-amount' lines."
   (let ((occurrence (iedit-current-occurrence-string)))
     (iedit-cleanup)
     (if (eq where 'top)
@@ -651,23 +650,21 @@ the search region by `amount' lines."
              (length iedit-occurrences-overlays)
              (if (= 1 (length iedit-occurrences-overlays)) "" "es"))))
 
-(defun iedit-expand-up-a-line (&optional arg)
+(defun iedit-expand-up-a-line (&optional N)
   "After start iedit-mode only on current symbol or the active
-region, this function expands the search region upwards by one
-line.  With a prefix, bring the top of the region back down one
-line."
-  (interactive "P")
-  (iedit-expand-by-a-line 'top
-                          (if arg -1 1)))
-
-(defun iedit-expand-down-a-line (&optional arg)
+region, this function expands the search region upwards by N
+line.  N defaults to 1.  If N is negative, collapses the top of
+the search region by `-N' lines."
+  (interactive "p")
+  (iedit-expand-by-a-line 'top N))
+  
+(defun iedit-expand-down-a-line (&optional N)
   "After start iedit-mode only on current symbol or the active
-region, this function expands the search region downwards by one
-line.  With a prefix, bring the bottom of the region back up one
-line."
-  (interactive "P")
-  (iedit-expand-by-a-line 'bottom
-                          (if arg -1 1)))
+region, this function expands the search region downwards by N
+line.  N defaults to 1.  If N is negative, collapses the bottom
+of the search region by `-N' lines."
+  (interactive "p")
+  (iedit-expand-by-a-line 'bottom N))
 
 (defun iedit-expand-down-to-occurrence (&optional arg)
   "Expand the search region downwards until reaching a new occurrence.
