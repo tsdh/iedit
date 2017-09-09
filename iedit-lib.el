@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-06-24 14:02:51 Victor Ren>
+;; Time-stamp: <2017-09-09 19:22:51 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.9.9
@@ -164,7 +164,12 @@ is not applied to other occurrences when it is true.")
 
 (defvar iedit-occurrence-keymap-default
   (let ((map (make-sparse-keymap)))
-;;  (set-keymap-parent map iedit-lib-keymap)
+    ;; `yas-minor-mode' uses tab by default and installs its keymap in
+    ;; `emulation-mode-map-alists', which is used before before
+    ;; ‘minor-mode-map-alist’.  So TAB is bond to get used even before
+    ;; `yas-minor-mode', to prevent overriding.
+    (define-key map (kbd "TAB") 'iedit-next-occurrence)
+    (define-key map (kbd "<tab>") 'iedit-next-occurrence)
     (define-key map (kbd "M-U") 'iedit-upcase-occurrences)
     (define-key map (kbd "M-L") 'iedit-downcase-occurrences)
     (define-key map (kbd "M-R") 'iedit-replace-occurrences)
