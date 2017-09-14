@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2017-09-14 23:10:36 Victor Ren>
+;; Time-stamp: <2017-09-15 00:05:18 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.9.9
@@ -33,8 +33,14 @@
 ;; - Create occurrence overlays
 ;; - Navigate in the occurrence overlays
 ;; - Modify the occurrences
-;; - Hide/unhide
+;; - Hide/show
 ;; - Other basic support APIs
+;; 
+;; A few concepts that help you understand what this is about:
+;; Occurrence
+;; Occurrence overlay
+;; Unmatched lines
+;; Context lines
 
 ;;; todo:
 ;; - Update comments for APIs
@@ -45,7 +51,8 @@
 (eval-when-compile (require 'cl))
 
 (defgroup iedit nil
-  "Edit multiple regions in the same way simultaneously."
+  "Edit multiple regions in the same way simultaneously.
+The regions are usually the same, called occurrences in the mode."
   :prefix "iedit-"
   :group 'replace
   :group 'convenience)
@@ -96,7 +103,8 @@ If no-nil, matching is case sensitive.")
 
 (defvar iedit-unmatched-lines-invisible nil
   "This is buffer local variable which indicates whether
-unmatched lines are hided.")
+unmatched lines are hided.
+Unmatched lines are the lines that don't have occurrences.")
 
 (defvar iedit-forward-success t
   "This is buffer local variable which indicates the moving
@@ -158,7 +166,7 @@ is not applied to other occurrences when it is true.")
     (define-key map (kbd "<S-tab>") 'iedit-prev-occurrence)
     (define-key map (kbd "<S-iso-lefttab>") 'iedit-prev-occurrence)
     (define-key map (kbd "<backtab>") 'iedit-prev-occurrence)
-    (define-key map (kbd "C-'") 'iedit-toggle-unmatched-lines-visible)
+    (define-key map (kbd "C-'") 'iedit-show/hide-unmatched-lines)
     map)
   "Keymap used while Iedit mode is enabled.")
 
@@ -188,7 +196,7 @@ is not applied to other occurrences when it is true.")
 (when (require 'multiple-cursors-core nil t)
   (defun iedit-switch-to-mc-mode ()
     "Switch to multiple-cursors-mode.  So that you can navigate
-out of the occurrence and edit simutaneously with multiple
+out of the occurrence and edit simultaneously with multiple
 cursors."
     (interactive "*")
     (iedit-barf-if-buffering)
@@ -205,9 +213,9 @@ cursors."
       (multiple-cursors-mode 1)
       ))
   ;; `multiple-cursors-mode' runs `post-command-hook' function for all the
-  ;; currors. `post-command-hook' is setup in `iedit-switch-to-mc-mode' So the
-  ;; function is excuted after `iedit-switch-to-mc-mode'. It is not expected.
-  ;; `mc/cmds-to-runn-once' is for skipping this.
+  ;; cursors. `post-command-hook' is setup in `iedit-switch-to-mc-mode' So the
+  ;; function is executed after `iedit-switch-to-mc-mode'. It is not expected.
+  ;; `mc/cmds-to-run-once' is for skipping this.
   (add-to-list 'mc/cmds-to-run-once 'iedit-switch-to-mc-mode)
   (define-key iedit-occurrence-keymap-default (kbd "M-M") 'iedit-switch-to-mc-mode))
 
@@ -549,8 +557,8 @@ the buffer."
         (setq pos (previous-single-char-property-change pos 'iedit-occurrence-overlay-name)))
     pos))
 
-(defun iedit-toggle-unmatched-lines-visible (&optional arg)
-  "Toggle whether to display unmatched lines.
+(defun iedit-show/hide-unmatched-lines (&optional arg)
+  "Show or hide unmatched lines.
 A prefix ARG specifies how many lines before and after the
 occurrences are not hided; negative is treated the same as zero.
 
@@ -957,4 +965,5 @@ it just means mark is active."
 ;;  LocalWords:  substring cadr keymap defconst purecopy bkm defun princ prev
 ;;  LocalWords:  iso lefttab backtab upcase downcase concat setq autoload arg
 ;;  LocalWords:  refactoring propertize cond goto nreverse progn rotatef eq elp
-;;  LocalWords:  dolist pos unmatch args ov sReplace iedit's cdr quote'ed
+;;  LocalWords:  dolist pos unmatch args ov sReplace iedit's cdr quote'ed yas
+;;  LocalWords:  defface alists SPC mc cmds

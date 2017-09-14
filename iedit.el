@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2016-12-19 14:15:36 Victor Ren>
+;; Time-stamp: <2017-09-15 00:07:02 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.9.9.9
@@ -97,7 +97,7 @@ isearch-mode-map, esc-map and help-map."
 
 (defvar iedit-use-symbol-boundaries t
   "If no-nil, matches have to start and end at symbol boundaries. Otherwise,
-matches starts and end at word bondaries.")
+matches starts and end at word boundaries.")
 
 (defvar iedit-occurrence-type-local 'symbol
   "This is buffer local variable which indicates the occurrence
@@ -135,7 +135,7 @@ point should be included in the replacement region.")
 (defvar iedit-default-occurrence-local nil
   "This is a function which returns a string as occurrence candidate.
 It is called in `iedit-default-occurrence'.  This buffer local
-varialbe can be configured in some modes.  An example of how to
+variable can be configured in some modes.  An example of how to
 use this variable:
 (add-hook 'perl-mode-hook
           '(lambda ()
@@ -488,7 +488,7 @@ If the cursor is on a markup tag, the position of the opening and
 closing markup tags are saved in `iedit-occurrence-overlays'
 temporarily.
 
-The code is adpated from
+The code is adapted from
 `sgml-electric-tag-pair-before-change-function'.
 
 Return the tag if succeeded, nil if failed."
@@ -746,8 +746,10 @@ prefix, bring the top of the region back down one occurrence."
 ;;; iedit.el ends here
 
 ;;  LocalWords:  iedit el MERCHANTABILITY kbd isearch todo ert Lindberg Tassilo
-;;  LocalWords:  eval defgroup defcustom boolean defvar assq alist nconc
+;;  LocalWords:  eval defgroup defcustom boolean defvar assq alist nconc Ren
 ;;  LocalWords:  substring cadr keymap defconst purecopy bkm defun princ prev
 ;;  LocalWords:  iso lefttab backtab upcase downcase concat setq autoload arg
 ;;  LocalWords:  refactoring propertize cond goto nreverse progn rotatef eq elp
-;;  LocalWords:  dolist pos unmatch args ov sReplace iedit's cdr quote'ed
+;;  LocalWords:  dolist pos unmatch args ov sReplace iedit's cdr quote'ed RET
+;;  LocalWords:  sgml esc num perl memq url functionp funcall str alnum endp
+;;  LocalWords:  sexp bol eol
