@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2017-09-09 19:22:51 Victor Ren>
+;; Time-stamp: <2017-09-14 23:10:36 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.9.9
@@ -184,6 +184,32 @@ is not applied to other occurrences when it is true.")
     (define-key map [remap keyboard-quit] 'iedit-quit)
     map)
   "Default keymap used within occurrence overlays.")
+
+(when (require 'multiple-cursors-core nil t)
+  (defun iedit-switch-to-mc-mode ()
+    "Switch to multiple-cursors-mode.  So that you can navigate
+out of the occurrence and edit simutaneously with multiple
+cursors."
+    (interactive "*")
+    (iedit-barf-if-buffering)
+    (let* ((ov (iedit-find-current-occurrence-overlay))
+           (offset (- (point) (overlay-start ov)))
+           (master (point)))
+      (mc/save-excursion
+       (dolist (occurrence iedit-occurrences-overlays)
+         (goto-char (+ (overlay-start occurrence) offset))
+         (unless (= master (point))
+           (mc/create-fake-cursor-at-point))
+         ))
+      (run-hooks 'iedit-aborting-hook)
+      (multiple-cursors-mode 1)
+      ))
+  ;; `multiple-cursors-mode' runs `post-command-hook' function for all the
+  ;; currors. `post-command-hook' is setup in `iedit-switch-to-mc-mode' So the
+  ;; function is excuted after `iedit-switch-to-mc-mode'. It is not expected.
+  ;; `mc/cmds-to-runn-once' is for skipping this.
+  (add-to-list 'mc/cmds-to-run-once 'iedit-switch-to-mc-mode)
+  (define-key iedit-occurrence-keymap-default (kbd "M-M") 'iedit-switch-to-mc-mode))
 
 (defvar iedit-occurrence-keymap 'iedit-occurrence-keymap-default
   "Keymap used within occurrence overlays.
@@ -598,26 +624,7 @@ value of `iedit-occurrence-context-lines' is used for this time."
   (iedit-barf-if-buffering)
   (iedit-apply-on-occurrences 'upcase-region))
 
-(when (require 'multiple-cursors-core nil t)
-  (defun iedit-switch-to-mc-mode ()
-    "Switch to multiple-cursors-mode.  So that you can navigate
-out of the occurrence and edit simutaneously with multiple
-cursors."
-    (interactive "*")
-    (iedit-barf-if-buffering)
-    (let* ((ov (iedit-find-current-occurrence-overlay))
-           (offset (- (point) (overlay-start ov)))
-           (master (point)))
-      (mc/save-excursion
-       (dolist (occurrence iedit-occurrences-overlays)
-         (goto-char (+ (overlay-start occurrence) offset))
-         (unless (= master (point))
-           (mc/create-fake-cursor-at-point))
-         ))
-      (multiple-cursors-mode 1)
-      (run-hooks 'iedit-aborting-hook)))
 
-  (define-key iedit-occurrence-keymap-default (kbd "M-M") 'iedit-switch-to-mc-mode))
 
 (defun iedit-downcase-occurrences()
   "Covert occurrences to lower case."
