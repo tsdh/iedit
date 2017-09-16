@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2017-09-15 00:05:18 Victor Ren>
+;; Time-stamp: <2017-09-16 19:31:32 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.9.9
@@ -193,31 +193,35 @@ is not applied to other occurrences when it is true.")
     map)
   "Default keymap used within occurrence overlays.")
 
-(when (require 'multiple-cursors-core nil t)
-  (defun iedit-switch-to-mc-mode ()
-    "Switch to multiple-cursors-mode.  So that you can navigate
+(eval-after-load  'multiple-cursors-core
+  '(progn
+     ;; The declarations are to avoid compile errors if mc is unknown by Emacs. 
+     (declare-function mc/create-fake-cursor-at-point "mutiple-cursor-core.el" nil)
+     (declare-function multiple-cursors-mode "mutiple-cursor-core.el")
+     (defun iedit-switch-to-mc-mode ()
+       "Switch to multiple-cursors-mode.  So that you can navigate
 out of the occurrence and edit simultaneously with multiple
 cursors."
-    (interactive "*")
-    (iedit-barf-if-buffering)
-    (let* ((ov (iedit-find-current-occurrence-overlay))
-           (offset (- (point) (overlay-start ov)))
-           (master (point)))
-      (mc/save-excursion
-       (dolist (occurrence iedit-occurrences-overlays)
-         (goto-char (+ (overlay-start occurrence) offset))
-         (unless (= master (point))
-           (mc/create-fake-cursor-at-point))
-         ))
-      (run-hooks 'iedit-aborting-hook)
-      (multiple-cursors-mode 1)
-      ))
-  ;; `multiple-cursors-mode' runs `post-command-hook' function for all the
-  ;; cursors. `post-command-hook' is setup in `iedit-switch-to-mc-mode' So the
-  ;; function is executed after `iedit-switch-to-mc-mode'. It is not expected.
-  ;; `mc/cmds-to-run-once' is for skipping this.
-  (add-to-list 'mc/cmds-to-run-once 'iedit-switch-to-mc-mode)
-  (define-key iedit-occurrence-keymap-default (kbd "M-M") 'iedit-switch-to-mc-mode))
+       (interactive "*")
+       (iedit-barf-if-buffering)
+       (let* ((ov (iedit-find-current-occurrence-overlay))
+	      (offset (- (point) (overlay-start ov)))
+	      (master (point)))
+	 (save-excursion
+	  (dolist (occurrence iedit-occurrences-overlays)
+	    (goto-char (+ (overlay-start occurrence) offset))
+	    (unless (= master (point))
+	      (mc/create-fake-cursor-at-point))
+	    ))
+	 (run-hooks 'iedit-aborting-hook)
+	 (multiple-cursors-mode 1)
+	 ))
+     ;; `multiple-cursors-mode' runs `post-command-hook' function for all the
+     ;; cursors. `post-command-hook' is setup in `iedit-switch-to-mc-mode' So the
+     ;; function is executed after `iedit-switch-to-mc-mode'. It is not expected.
+     ;; `mc/cmds-to-run-once' is for skipping this.
+     (add-to-list 'mc/cmds-to-run-once 'iedit-switch-to-mc-mode)
+     (define-key iedit-occurrence-keymap-default (kbd "M-M") 'iedit-switch-to-mc-mode)))
 
 (defvar iedit-occurrence-keymap 'iedit-occurrence-keymap-default
   "Keymap used within occurrence overlays.
