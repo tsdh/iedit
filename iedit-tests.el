@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2017-09-14 23:49:18 Victor Ren>
+;; Time-stamp: <2018-02-07 18:08:22 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.97
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
@@ -275,23 +275,32 @@ fob")))))
    (lambda ()
      (iedit-goto-last-occurrence)
      (should (= (point) 24))
+     (should (= iedit-occurrence-index 3))
      (iedit-goto-first-occurrence)
      (should (= (point) 1))
+     (should (= iedit-occurrence-index 1))
      (iedit-next-occurrence)
      (should (= (point) 7))
+     (should (= iedit-occurrence-index 2))
      (iedit-next-occurrence)
      (should (= (point) 24))
+     (should (= iedit-occurrence-index 3))
      (iedit-next-occurrence)
      (should (= (point) 24)) ;; (should (string= (current-message) "This is the last occurrence."))
+     (should (= iedit-occurrence-index 3))
      (iedit-next-occurrence)
      (should (= (point) 1)) ;; (should (string= (current-message) "Located the first occurrence."))
+     (should (= iedit-occurrence-index 1))
      (iedit-next-occurrence)
      (should (= (point) 7))
+     (should (= iedit-occurrence-index 2))
      (goto-char (point-max))
      (iedit-prev-occurrence)
      (should (= (point) 27))
+     (should (= iedit-occurrence-index 3))
      (iedit-prev-occurrence)
      (should (= (point) 24))
+     (should (= iedit-occurrence-index 3))
      (iedit-prev-occurrence)
      (should (= (point) 7))
      (iedit-prev-occurrence)
