@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2018-02-07 18:08:39 Victor Ren>
+;; Time-stamp: <2018-08-30 13:17:20 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.9.9.9
@@ -630,9 +630,12 @@ the initial string globally."
 (defun iedit-restrict-function(&optional arg)
   "Restricting Iedit mode in current function."
   (interactive "P")
-  (save-excursion
-    (mark-defun)
-    (iedit-restrict-region (region-beginning) (region-end) arg))
+  (let (beg end)
+    (save-excursion
+      (mark-defun)
+      (setq beg (region-beginning))
+      (setq end (region-end)))
+    (iedit-restrict-region beg end arg))
   (message "Restricted in current function, %d matches."
            (length iedit-occurrences-overlays)))
 
