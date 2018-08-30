@@ -2,9 +2,9 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2018-02-07 18:08:22 Victor Ren>
+;; Time-stamp: <2018-03-15 15:19:45 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
-;; Version: 0.97
+;; Version: 0.9.9.9
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
 
 ;; This file is not part of GNU Emacs, but it is distributed under

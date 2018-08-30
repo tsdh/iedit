@@ -3,10 +3,10 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2018-02-07 18:11:06 Victor Ren>
+;; Time-stamp: <2018-03-13 17:58:40 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
-;; Version: 0.9.9
+;; Version: 0.9.9.9
 ;; X-URL: http://www.emacswiki.org/emacs/Iedit
 ;; Compatibility: GNU Emacs: 22.x, 23.x, 24.x, 25.x
 
@@ -52,7 +52,7 @@
 
 (defgroup iedit nil
   "Edit multiple regions in the same way simultaneously.
-The regions are usually the same, called occurrences in the mode."
+The regions are usually the same, called 'occurrence' in the mode."
   :prefix "iedit-"
   :group 'replace
   :group 'convenience)
@@ -86,9 +86,9 @@ mode, set it as nil."
   :group 'iedit)
 
 (defcustom iedit-index-update-limit 200
-  "If the number of occurrence is great than this, the
-`iedit-occurrence-index' will not be updated to avoid the
-traverse of the long `iedit-occurrences-overlays' list."
+  "If the number of occurrences is great than this, the
+`iedit-occurrence-index' will not be updated.  This is to avoid
+the traverse of the long `iedit-occurrences-overlays' list."
   :type 'integer
   :group 'iedit)
 
@@ -384,6 +384,7 @@ occurrences if the user starts typing."
     (overlay-put occurrence 'insert-behind-hooks '(iedit-update-occurrences))
     (overlay-put occurrence 'modification-hooks '(iedit-update-occurrences))
     (overlay-put occurrence 'priority iedit-overlay-priority)
+    (overlay-put occurrence 'category 'iedit-overlay)
     occurrence))
 
 (defun iedit-make-read-only-occurrence-overlay (begin end)
