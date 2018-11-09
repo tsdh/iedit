@@ -388,6 +388,9 @@ Keymap used within overlays:
       (when arg
         (cond ((= 0 (prefix-numeric-value arg))
                (save-excursion
+		 ;; Since Emacs 26.1, `mark-defun' marks the next defun if the
+		 ;; mark is active.
+		 (deactivate-mark t)
                  (mark-defun)
                  (setq beg (region-beginning))
                  (setq end (region-end))))
