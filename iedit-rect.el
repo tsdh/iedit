@@ -2,12 +2,13 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2018-02-08 18:29:26 Victor Ren>
+;; Time-stamp: <2018-09-19 11:10:37 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.9.9.9
-;; X-URL: http://www.emacswiki.org/emacs/Iedit
-;; Compatibility: GNU Emacs: 22.x, 23.x, 24.x
+;; X-URL: https://www.emacswiki.org/emacs/Iedit
+;;        https://github.com/victorhge/iedit
+;; Compatibility: GNU Emacs: 22.x, 23.x, 24.x, 25.x
 
 ;; This file is not part of GNU Emacs, but it is distributed under
 ;; the same terms as GNU Emacs.
