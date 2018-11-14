@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2018-09-19 11:11:07 Victor Ren>
+;; Time-stamp: <2018-11-14 17:48:26 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.9.9.9
 ;; X-URL: https://www.emacswiki.org/emacs/Iedit
@@ -613,11 +613,14 @@ arfoo
       (emacs-lisp-mode)
       (goto-char 5)
       (iedit-mode)
+      (setq iedit-auto-narrow t)
       (iedit-restrict-function)
       (should (= 1 (length iedit-occurrences-overlays)))
+      (should (equal (buffer-narrowed-p) iedit-is-narrowed))
       (iedit-mode)
       (goto-char 13)
-      (iedit-mode-toggle-on-function)
+      (setq iedit-auto-narrow nil)
+      (call-interactively 'iedit-mode-toggle-on-function)
       (should (= 4 (length iedit-occurrences-overlays)))
       (iedit-mode)
       (iedit-mode)
