@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2018-11-14 17:48:26 Victor Ren>
+;; Time-stamp: <2018-11-16 14:55:04 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.9.9.9
 ;; X-URL: https://www.emacswiki.org/emacs/Iedit
@@ -220,6 +220,34 @@ fob")))))
      (should (= 4 (length iedit-occurrences-overlays)))
      (iedit-mode)
      (should (null iedit-occurrences-overlays)))))
+
+(ert-deftest iedit-mode-start-from-isearch-regexp-test ()
+  (with-iedit-test-fixture
+"foo
+  fobar
+  foobar
+  fooobar
+   barfoo
+   foo"
+   (lambda ()
+     (iedit-mode)
+     (call-interactively 'isearch-forward-regexp)
+     (isearch-process-search-char ?f)
+     (isearch-process-search-char ?o)
+     (isearch-process-search-char ?*)
+     (isearch-process-search-char ?b)
+     (call-interactively 'iedit-mode-from-isearch)
+     (should (null iedit-occurrences-overlays))
+     (should (string= (current-message) "Matches are not the same length."))
+     (goto-char (point-min))
+     (call-interactively 'isearch-forward-regexp)
+     (isearch-process-search-char ?f)
+     (isearch-process-search-char ?o)
+     (isearch-process-search-char ?.)
+     (isearch-process-search-char ?b)
+     (call-interactively 'iedit-mode-from-isearch)
+     (should (= 1 (length iedit-occurrences-overlays)))
+    )))
 
 (ert-deftest iedit-mode-last-local-occurrence-test ()
   (with-iedit-test-fixture

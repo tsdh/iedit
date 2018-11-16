@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2018-09-19 11:09:54 Victor Ren>
+;; Time-stamp: <2018-11-16 14:49:24 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.9.9.9
@@ -275,7 +275,8 @@ Return the number of occurrences."
   (setq iedit-read-only-occurrences-overlays nil)
   ;; Find and record each occurrence's markers and add the overlay to the occurrences
   (let ((counter 0)
-        (case-fold-search (not iedit-case-sensitive)))
+        (case-fold-search (not iedit-case-sensitive))
+	(length 0))
     (save-excursion
       (save-window-excursion
         (goto-char end)
@@ -285,6 +286,9 @@ Return the number of occurrences."
         (while (re-search-forward occurrence-regexp end t)
           (let ((beginning (match-beginning 0))
                 (ending (match-end 0)))
+	    (if (and (> length 0) (/= (- ending beginning) length))
+		(throw 'not-same-length 'not-same-length)
+	      (setq length (- ending beginning)))
             (if (text-property-not-all beginning ending 'read-only nil)
                 (push (iedit-make-read-only-occurrence-overlay beginning ending)
                       iedit-read-only-occurrences-overlays)

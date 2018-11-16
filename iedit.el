@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2018-11-14 17:49:13 Victor Ren>
+;; Time-stamp: <2018-11-16 12:11:48 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.9.9.9
@@ -441,18 +441,20 @@ Keymap used within overlays:
   (if (or isearch-regexp isearch-regexp-function)
       nil
     (setq iedit-initial-string-local isearch-string))
-  (let ((iedit-case-sensitive (not isearch-case-fold-search)))
+  (let ((iedit-case-sensitive (not isearch-case-fold-search))
+	result)
     (isearch-exit)
     (setq mark-active nil)
     (run-hooks 'deactivate-mark-hook)
     (when iedit-mode
       (iedit-cleanup))
-    (iedit-start regexp (point-min) (point-max))
-    ;; TODO: reconsider how to avoid the loop in iedit-same-length
+    (setq result
+	  (catch 'not-same-length
+	    (iedit-start regexp (point-min) (point-max))))
     (cond ((not iedit-occurrences-overlays)
            (message "No matches found for %s" regexp)
            (iedit-done))
-          ((not (iedit-same-length))
+          ((equal result 'not-same-length)
            (message "Matches are not the same length.")
            (iedit-done)))))
 
