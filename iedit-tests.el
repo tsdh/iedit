@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2018-11-16 14:55:04 Victor Ren>
+;; Time-stamp: <2019-04-19 16:01:33 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.9.9.9
 ;; X-URL: https://www.emacswiki.org/emacs/Iedit
@@ -528,6 +528,40 @@ fob")))))
  barfoo
   barfoo
     barfoo")))))
+
+(ert-deftest iedit-buffering-undo-test ()
+  (with-iedit-test-fixture
+"foo
+ foo
+  barfoo
+    foo"
+   (lambda ()
+	 (iedit-mode)						;turnoff
+     (setq iedit-auto-buffering t)
+	 (push nil buffer-undo-list)
+	 (call-interactively 'iedit-mode)
+     (insert "bar")
+     (should (string= (buffer-string)
+"barfoo
+ foo
+  barfoo
+    foo"))
+     (call-interactively 'iedit-mode)
+     (should (string= (buffer-string)
+"barfoo
+ barfoo
+  barfoo
+    barfoo"))
+     (should (= (point) 4))
+	 (push nil buffer-undo-list)
+	 (undo 1)
+	 (should (= (point) 1))
+     (should (string= (buffer-string)
+"foo
+ foo
+  barfoo
+    foo"))
+     )))
 
 (ert-deftest iedit-rectangle-start-test ()
   (with-iedit-test-fixture

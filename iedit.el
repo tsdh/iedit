@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2018-11-16 12:11:48 Victor Ren>
+;; Time-stamp: <2019-04-18 18:34:11 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.9.9.9
@@ -476,6 +476,8 @@ Keymap used within overlays:
              counter
              (iedit-printable occurrence-regexp))
     (setq iedit-mode t))
+  (when iedit-auto-buffering
+	(iedit-start-buffering))
   (run-hooks 'iedit-mode-hook)
   (add-hook 'before-revert-hook 'iedit-done nil t)
   (add-hook 'kbd-macro-termination-hook 'iedit-done nil t)

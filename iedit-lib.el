@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2018-11-16 14:49:24 Victor Ren>
+;; Time-stamp: <2019-04-19 15:55:54 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.9.9.9
@@ -81,6 +81,12 @@ mode, set it as nil."
   :type 'boolean
   :group 'iedit)
 
+(defcustom iedit-auto-buffering nil
+  "If no-nil, iedit-mode automatically starts buffering the changes.
+ This could be a workaround for lag problem under certain modes."
+  :type 'boolean
+  :group 'iedit)
+
 (defcustom iedit-overlay-priority 200
   "The priority of the overlay used to indicate matches."
   :type 'integer
@@ -122,8 +128,15 @@ forward or backward successful")
   "This is buffer local variable which is the buffer substring
 that is going to be changed.")
 
-(defvar iedit-before-modification-undo-list nil
+(defvar iedit-before-buffering-string ""
+  "This is buffer local variable which is the buffer substring
+that is going to be changed.")
+
+(defvar iedit-before-buffering-undo-list nil
   "This is buffer local variable which is the buffer undo list before modification.")
+
+(defvar iedit-before-buffering-point nil
+  "This is buffer local variable which is the point before modification.")
 
 ;; `iedit-update-occurrences' gets called twice when change==0 and
 ;; occurrence is zero-width (beg==end) -- for front and back insertion.
@@ -160,10 +173,13 @@ occurrence.")
 (make-local-variable 'iedit-case-sensitive)
 (make-variable-buffer-local 'iedit-forward-success)
 (make-variable-buffer-local 'iedit-before-modification-string)
-(make-variable-buffer-local 'iedit-before-modification-undo-list)
+(make-variable-buffer-local 'iedit-before-buffering-string)
+(make-variable-buffer-local 'iedit-before-buffering-undo-list)
+(make-variable-buffer-local 'iedit-before-buffering-point)
 (make-variable-buffer-local 'iedit-skip-modification-once)
 (make-variable-buffer-local 'iedit-aborting)
 (make-variable-buffer-local 'iedit-buffering)
+(make-variable-buffer-local 'iedit-auto-buffering)
 (make-variable-buffer-local 'iedit-post-undo-hook-installed)
 (make-variable-buffer-local 'iedit-occurrence-context-lines)
 (make-variable-buffer-local 'iedit-occurrence-index)
@@ -374,7 +390,7 @@ there are."
   (setq iedit-read-only-occurrences-overlays nil)
   (setq iedit-aborting nil)
   (setq iedit-before-modification-string "")
-  (setq iedit-before-modification-undo-list nil))
+  (setq iedit-before-buffering-undo-list nil))
 
 (defun iedit-make-occurrence-overlay (begin end)
   "Create an overlay for an occurrence in Iedit mode.
@@ -746,8 +762,10 @@ be applied to other occurrences when buffering is off."
 (defun iedit-start-buffering ()
   "Start buffering."
   (setq iedit-buffering t)
-  (setq iedit-before-modification-string (iedit-current-occurrence-string))
-  (setq iedit-before-modification-undo-list buffer-undo-list)
+  (setq iedit-before-buffering-string (iedit-current-occurrence-string))
+  (setq iedit-before-buffering-undo-list buffer-undo-list)
+  (setq iedit-before-buffering-point (point))
+  (buffer-disable-undo)
   (message "Start buffering editing..."))
 
 (defun iedit-stop-buffering ()
@@ -761,14 +779,18 @@ modification is not going to be applied to other occurrences."
              (modified-string (buffer-substring-no-properties beg end))
              (offset (- (point) beg)) ;; delete-region moves cursor
              (inhibit-modification-hooks t))
-        (when (not (string= iedit-before-modification-string modified-string))
+        (when (not (string= iedit-before-buffering-string modified-string))
           (save-excursion
             ;; Rollback the current modification and buffer-undo-list. This is
             ;; to avoid the inconsistency if user undoes modifications
             (delete-region beg end)
             (goto-char beg)
-            (insert-and-inherit iedit-before-modification-string)
-            (setq buffer-undo-list iedit-before-modification-undo-list)
+            (insert-and-inherit iedit-before-buffering-string)
+			(goto-char iedit-before-buffering-point)
+			(buffer-enable-undo)
+            (setq buffer-undo-list iedit-before-buffering-undo-list)
+			;; go back here if undo
+			(push (point) buffer-undo-list)
             (dolist (occurrence iedit-occurrences-overlays) ; todo:extract as a function
               (let ((beginning (overlay-start occurrence))
                     (ending (overlay-end occurrence)))
@@ -780,7 +802,7 @@ modification is not going to be applied to other occurrences."
           (goto-char (+ (overlay-start ov) offset))))))
   (setq iedit-buffering nil)
   (message "Buffered modification applied.")
-  (setq iedit-before-modification-undo-list nil))
+  (setq iedit-before-buffering-undo-list nil))
 
 (defun iedit-move-conjoined-overlays (occurrence)
   "This function keeps overlays conjoined after modification.
