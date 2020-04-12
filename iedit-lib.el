@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2019-04-19 15:55:54 Victor Ren>
+;; Time-stamp: <2020-04-12 14:56:30 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.9.9.9
@@ -49,7 +49,7 @@
 
 ;;; Code:
 
-(eval-when-compile (require 'cl))
+;; (eval-when-compile (require 'cl-lib))
 
 (defgroup iedit nil
   "Edit multiple regions in the same way simultaneously.
