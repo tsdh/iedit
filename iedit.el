@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2020-04-12 14:43:27 Victor Ren>
+;; Time-stamp: <2020-07-05 21:59:22 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.9.9.9
@@ -605,7 +605,9 @@ the initial string globally."
 (defun iedit-mode-toggle-on-function ()
   "Toggle Iedit mode on current function."
   (interactive)
-  (iedit-mode 0))
+  (if iedit-mode
+	  (iedit-done)
+	(iedit-mode 0)))
 
 (defun iedit-execute-last-modification (&optional arg)
   "Apply last modification in Iedit mode to the current buffer or an active region."
