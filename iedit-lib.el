@@ -3,7 +3,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2020-04-12 14:56:30 Victor Ren>
+;; Time-stamp: <2020-07-16 12:17:46 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous rectangle refactoring
 ;; Version: 0.9.9.9
@@ -38,10 +38,15 @@
 ;; - Other basic support APIs
 ;; 
 ;; A few concepts that help you understand what this is about:
-;; Occurrence
-;; Occurrence overlay
-;; Unmatched lines
-;; Context lines
+;;
+;; Occurrence - one of the regions that are selected, highlighted, usually the
+;; same and about to be modified.
+;;
+;; Occurrence overlay - overlay used to provide a different face for occurrence
+;;
+;; Occurrence line - the line that has at least one occurrence
+;;
+;; Context line - the line that doesn't have occurrences
 
 ;;; todo:
 ;; - Update comments for APIs
@@ -121,10 +126,8 @@ configurable via `iedit-ready-only-occurrence'.")
   "This is buffer local variable.
 If no-nil, matching is case sensitive.")
 
-(defvar iedit-unmatched-lines-invisible nil
-  "This is buffer local variable which indicates whether
-unmatched lines are hided.
-Unmatched lines are the lines that don't have occurrences.")
+(defvar iedit-hiding nil
+  "This is buffer local variable which indicates whether buffer lines are hided. ")
 
 (defvar iedit-forward-success t
   "This is buffer local variable which indicates the moving
@@ -175,7 +178,7 @@ occurrence.")
 
 (make-variable-buffer-local 'iedit-occurrences-overlays)
 (make-variable-buffer-local 'iedit-read-only-occurrences-overlays)
-(make-variable-buffer-local 'iedit-unmatched-lines-invisible)
+(make-variable-buffer-local 'iedit-hiding)
 (make-local-variable 'iedit-case-sensitive)
 (make-variable-buffer-local 'iedit-forward-success)
 (make-variable-buffer-local 'iedit-before-modification-string)
@@ -202,7 +205,8 @@ occurrence.")
     (define-key map (kbd "<S-tab>") 'iedit-prev-occurrence)
     (define-key map (kbd "<S-iso-lefttab>") 'iedit-prev-occurrence)
     (define-key map (kbd "<backtab>") 'iedit-prev-occurrence)
-    (define-key map (kbd "C-'") 'iedit-show/hide-unmatched-lines)
+    (define-key map (kbd "C-'") 'iedit-show/hide-context-lines)
+	(define-key map (kbd "C-\"") 'iedit-show/hide-occurrence-lines)
     map)
   "Keymap used while Iedit mode is enabled.")
 
@@ -363,9 +367,9 @@ Return the start position of the new occurrence if successful."
               iedit-occurrences-overlays)
 	(iedit-update-index point)
         (message "Add one match for \"%s\"." (iedit-printable occurrence-exp))
-        (when iedit-unmatched-lines-invisible
+        (when iedit-hiding
           (iedit-show-all)
-          (iedit-hide-unmatched-lines iedit-occurrence-context-lines))
+          (iedit-hide-context-lines iedit-occurrence-context-lines))
         ))
     pos))
 
@@ -397,7 +401,8 @@ there are."
   (setq iedit-read-only-occurrences-overlays nil)
   (setq iedit-aborting nil)
   (setq iedit-before-modification-string "")
-  (setq iedit-before-buffering-undo-list nil))
+  (setq iedit-before-buffering-undo-list nil)
+  (setq iedit-hiding nil))
 
 (defun iedit-make-occurrence-overlay (begin end)
   "Create an overlay for an occurrence in Iedit mode.
@@ -422,13 +427,13 @@ occurrences if the user starts typing."
     (overlay-put occurrence 'face 'iedit-read-only-occurrence)
     occurrence))
 
-(defun iedit-make-unmatched-lines-overlay (begin end)
-  "Create an overlay for lines between two occurrences in Iedit mode."
-  (let ((unmatched-lines-overlay (make-overlay begin end (current-buffer) nil t)))
-    (overlay-put unmatched-lines-overlay iedit-invisible-overlay-name t)
-    (overlay-put unmatched-lines-overlay 'invisible 'iedit-invisible-overlay-name)
-    ;;    (overlay-put unmatched-lines-overlay 'intangible t)
-    unmatched-lines-overlay))
+(defun iedit-make-invisible-overlay (begin end)
+  "Create an invisible overlay from `begin` to `end`."
+  (let ((invisible-overlay (make-overlay begin end (current-buffer) nil t)))
+    (overlay-put invisible-overlay iedit-invisible-overlay-name t)
+    (overlay-put invisible-overlay 'invisible 'iedit-invisible-overlay-name)
+    ;;    (overlay-put invisible-overlay 'intangible t)
+    invisible-overlay))
 
 (defun iedit-post-undo ()
   "Check if it is time to abort iedit after undo command is executed.
@@ -621,68 +626,103 @@ the buffer."
         (setq pos (previous-single-char-property-change pos 'iedit-occurrence-overlay-name)))
     pos))
 
-(defun iedit-show/hide-unmatched-lines (&optional arg)
-  "Show or hide unmatched lines.
+(defun iedit-show/hide-context-lines (&optional arg)
+  "Show or hide context lines.
 A prefix ARG specifies how many lines before and after the
-occurrences are not hided; negative is treated the same as zero.
+occurrences are not hidden;  negative is treated the same as zero.
 
 If no prefix argument, the prefix argument last time or default
 value of `iedit-occurrence-context-lines' is used for this time."
   (interactive "P")
   (if (null arg)
       ;; toggle visible
-      (progn (setq iedit-unmatched-lines-invisible (not iedit-unmatched-lines-invisible))
-             (if iedit-unmatched-lines-invisible
-                 (iedit-hide-unmatched-lines iedit-occurrence-context-lines)
+      (progn (setq iedit-hiding (not iedit-hiding))
+             (if iedit-hiding
+                 (iedit-hide-context-lines iedit-occurrence-context-lines)
                (iedit-show-all)))
     ;; reset invisible lines
     (setq arg (prefix-numeric-value arg))
     (if (< arg 0)
         (setq arg 0))
-    (unless (and iedit-unmatched-lines-invisible
+    (unless (and iedit-hiding
                  (= arg iedit-occurrence-context-lines))
-      (when iedit-unmatched-lines-invisible
+	  (when iedit-hiding
         (remove-overlays nil nil iedit-invisible-overlay-name t))
-      (setq iedit-occurrence-context-lines arg)
-      (setq iedit-unmatched-lines-invisible t)
-      (iedit-hide-unmatched-lines iedit-occurrence-context-lines))))
+	  (setq iedit-occurrence-context-lines arg)
+	  (setq iedit-hiding t)
+	  (iedit-hide-context-lines iedit-occurrence-context-lines))))
 
 (defun iedit-show-all()
-  "Show hided lines."
+  "Show hidden lines."
   (setq line-move-ignore-invisible nil)
   (remove-from-invisibility-spec '(iedit-invisible-overlay-name . t))
   (remove-overlays nil nil iedit-invisible-overlay-name t))
 
-(defun iedit-hide-unmatched-lines (context-lines)
-  "Hide unmatched lines using invisible overlay."
+(defun iedit-hide-context-lines (visible-context-lines)
+  "Hide context lines using invisible overlay."
   (let ((prev-occurrence-end 1)
-        (unmatched-lines nil))
+        (hidden-regions nil))
     (save-excursion
       (goto-char (iedit-first-occurrence))
       (while (/= (point) (point-max))
         ;; Now at the beginning of an occurrence
         (let ((current-start (point)))
-          (forward-line (- context-lines))
+          (forward-line (- visible-context-lines))
           (let ((line-beginning (line-beginning-position)))
             (if (> line-beginning prev-occurrence-end)
-                (push  (list prev-occurrence-end (1- line-beginning)) unmatched-lines)))
+                (push  (list prev-occurrence-end (1- line-beginning)) hidden-regions)))
           ;; goto the end of the occurrence
           (goto-char (next-single-char-property-change current-start 'iedit-occurrence-overlay-name)))
         (let ((current-end (point)))
-          (forward-line context-lines)
+          (forward-line visible-context-lines)
           (setq prev-occurrence-end (1+ (line-end-position)))
           ;; goto the beginning of next occurrence
           (goto-char (next-single-char-property-change current-end 'iedit-occurrence-overlay-name))))
       (if (< prev-occurrence-end (point-max))
-          (push (list prev-occurrence-end (point-max)) unmatched-lines))
-      (when unmatched-lines
+          (push (list prev-occurrence-end (point-max)) hidden-regions))
+      (when hidden-regions
         (set (make-local-variable 'line-move-ignore-invisible) t)
         (add-to-invisibility-spec '(iedit-invisible-overlay-name . t))
-        (dolist (unmatch unmatched-lines)
-          (iedit-make-unmatched-lines-overlay (car unmatch) (cadr unmatch)))))
-    unmatched-lines))
+        (dolist (region hidden-regions)
+          (iedit-make-invisible-overlay (car region) (cadr region)))))
+    hidden-regions))
 
 ;;;; functions for overlay keymap
+(defun iedit-hide-occurrence-lines ()
+  "Hide occurrence lines using invisible overlay."
+  (let ((hidden-regions nil)
+		  (beginning  nil)
+		  (end nil))
+      (save-excursion
+		(goto-char (iedit-first-occurrence))
+		;; Now at the beginning of an occurrence
+		(setq beginning (line-beginning-position))
+		(while (/= (point) (point-max))
+          ;; goto the end of the occurrence
+          (goto-char (next-single-char-property-change (point) 'iedit-occurrence-overlay-name))
+		  (setq end (line-end-position))
+		  ;; goto the next beginning of the occurrence
+		  (goto-char (next-single-char-property-change (point) 'iedit-occurrence-overlay-name))
+		  (when (or (> (line-beginning-position) (1+ end))
+					(= (line-end-position) (point-max)))
+			(push (list beginning end) hidden-regions)
+			(setq beginning (line-beginning-position)))))
+	  (when hidden-regions
+		(set (make-local-variable 'line-move-ignore-invisible) t)
+		(add-to-invisibility-spec '(iedit-invisible-overlay-name . t))
+		(dolist (region hidden-regions)
+          (iedit-make-invisible-overlay (car region) (cadr region))))
+	    ;; Value returned is for ert
+	  hidden-regions))
+
+(defun iedit-show/hide-occurrence-lines ()
+  "Show or hide occurrence lines using invisible overlay."
+  (interactive "*")
+  (setq iedit-hiding (not iedit-hiding))
+  (if (not iedit-hiding)
+	  (iedit-show-all)
+	(iedit-hide-occurrence-lines)))
+
 (defun iedit-apply-on-occurrences (function &rest args)
   "Call function for each occurrence."
   (let ((inhibit-modification-hooks t))
@@ -890,7 +930,6 @@ FORMAT."
               (1+ iedit-number-occurrence-counter))
         (goto-char (next-single-char-property-change (point) 'iedit-occurrence-overlay-name))
         (goto-char (next-single-char-property-change (point) 'iedit-occurrence-overlay-name))))))
-
 
 ;;; help functions
 (defun iedit-find-current-occurrence-overlay ()

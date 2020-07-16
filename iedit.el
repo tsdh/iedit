@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2020-07-05 21:59:22 Victor Ren>
+;; Time-stamp: <2020-07-16 13:14:05 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.9.9.9
@@ -771,8 +771,8 @@ prefix, bring the top of the region back down one occurrence."
     (run-hooks 'deactivate-mark-hook)
     (iedit-show-all)
     (iedit-cleanup-occurrences-overlays beg end exclusive)
-    (if iedit-unmatched-lines-invisible
-        (iedit-hide-unmatched-lines iedit-occurrence-context-lines))
+    (if iedit-hiding
+        (iedit-hide-context-lines iedit-occurrence-context-lines))
     (force-mode-line-update)))
 
 (defun iedit-toggle-case-sensitive ()

@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2019-04-19 16:01:33 Victor Ren>
+;; Time-stamp: <2020-07-16 22:32:42 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Version: 0.9.9.9
 ;; X-URL: https://www.emacswiki.org/emacs/Iedit
@@ -35,9 +35,9 @@
 (require 'iedit-rect)
 
 (ert-deftest iedit-compile-test ()
-  (let ((byte-compile-error-on-warn t ))
-    (should (byte-compile-file "./iedit.el"))
-    (delete-file "./iedit.elc" nil)))
+  (let ((byte-compile-error-on-warn t))
+    (should (byte-compile-file (locate-library "iedit.el")))
+    (delete-file (byte-compile-dest-file "iedit.el") nil)))
 
 (defmacro with-iedit-test-buffer (buffer-name &rest body)
   (declare (indent 1) (debug t))
@@ -730,8 +730,8 @@ abcd" "12345678901234567890123456789012345678901234567890...")))
   (dolist (test iedit-printable-test-lists)
     (should (string= (iedit-printable (car test)) (cadr test)))))
 
-(ert-deftest iedit-hide-unmatched-lines-test ()
-  "Test function iedit-hide-unmatched-lines."
+(ert-deftest iedit-hide-context-lines-test ()
+  "Test function iedit-hide-context-lines."
   (with-iedit-test-fixture
    "foo
 foo
@@ -756,13 +756,41 @@ a
 a
 foo"
    (lambda ()
-     (should (equal (iedit-hide-unmatched-lines 0) '((64 73) (47 54) (33 38) (21 24) (9 10))))
+     (should (equal (iedit-hide-context-lines 0) '((64 73) (47 54) (33 38) (21 24) (9 10))))
      (iedit-show-all)
-     (should (equal (iedit-hide-unmatched-lines 1) '((66 71) (49 52) (35 36))))
+     (should (equal (iedit-hide-context-lines 1) '((66 71) (49 52) (35 36))))
      (iedit-show-all)
-     (should (equal (iedit-hide-unmatched-lines 2) '((68 69)) ))
+     (should (equal (iedit-hide-context-lines 2) '((68 69)) ))
      (iedit-show-all)
-     (should (equal (iedit-hide-unmatched-lines 3) nil)))))
+     (should (equal (iedit-hide-context-lines 3) nil)))))
+
+(ert-deftest iedit-hide-occurrence-lines-test ()
+  "Test function iedit-hide-occurrence-lines."
+  (with-iedit-test-fixture
+   "foo
+foo
+a
+  foo bar
+a
+a
+bar foo
+a
+a
+a
+bar foo
+a
+a
+a
+a
+ foo bar
+a
+a
+a
+a
+a
+foo"
+   (lambda ()
+     (should (equal (iedit-hide-occurrence-lines) '((74 77) (55 63) (39 46) (25 32) (11 20) (1 8)))))))
 
 ;; todo add a auto performance test
 (setq elp-function-list '(;; insert-and-inherit
