@@ -187,7 +187,6 @@ foo"
 foo"
    (lambda ()
      (iedit-mode)
-     (highlight-changes-mode 1)
      (goto-char (point-min))
      (goto-char (point-at-eol))
      (iedit-mode)

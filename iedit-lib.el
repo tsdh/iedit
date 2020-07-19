@@ -106,7 +106,7 @@ the traverse of the long `iedit-occurrences-overlays' list."
 
 (defcustom iedit-increment-format-string "%03d"
   "Format string used to format incremented numbers.
-This is used by `iedit-increment-occurences'."
+This is used by `iedit-increment-occurrences'."
   :type 'string
   :group 'iedit)
 
@@ -224,7 +224,7 @@ occurrence.")
     (define-key map (kbd "M-SPC") 'iedit-blank-occurrences)
     (define-key map (kbd "M-D") 'iedit-delete-occurrences)
     (define-key map (kbd "M-N") 'iedit-number-occurrences)
-    (define-key map (kbd "M-V") 'iedit-increment-occurences)
+    (define-key map (kbd "M-V") 'iedit-increment-occurrences)
     (define-key map (kbd "M-B") 'iedit-toggle-buffering)
     (define-key map (kbd "M-<") 'iedit-goto-first-occurrence)
     (define-key map (kbd "M->") 'iedit-goto-last-occurrence)
@@ -458,7 +458,7 @@ is called for a removed overlay."
   (setq iedit-aborting nil))
 
 ;; There are two ways to update all occurrences.  One is to redefine all key
-;; stroke map for overlay, the other is to figure out three basic modification
+;; stroke map for overlay, the other is to figure out three basic modifications
 ;; in the modification hook.  This function chooses the latter.
 (defun iedit-update-occurrences (occurrence after beg end &optional change)
   "Update all occurrences.
@@ -496,7 +496,7 @@ occurrence, it will abort Iedit mode."
           (setq iedit-skip-modification-once t)
           (when (or (eq 0 change) ;; insertion
                     (eq beg end)  ;; deletion
-                    (not (string= iedit-before-modification-string
+                    (not (string= iedit-before-modification-string ;; replacement
                                   (buffer-substring-no-properties beg end))))
             (iedit-update-occurrences-2  occurrence after beg end change))))))))
 
@@ -742,7 +742,7 @@ value of `iedit-occurrence-context-lines' is used for this time."
   (iedit-barf-if-buffering)
   (iedit-apply-on-occurrences 'downcase-region))
 
-(defun iedit-increment-occurences (&optional arg)
+(defun iedit-increment-occurrences (&optional arg)
   "Replace placeholder \"\\#\" by incremented number in each occurrence.
 Called with a prefix arg, allow editing the format string used, which
 default to `iedit-increment-format-string'."
